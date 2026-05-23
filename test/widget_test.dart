@@ -15,8 +15,11 @@ void main() {
             const _NoopRoutineNotificationScheduler(),
           ),
           todayTimelineProvider.overrideWith(
-            (ref) async =>
-                TodayTimeline(date: DateTime(2026), entries: const []),
+            (ref) async => TodayTimeline(
+              date: DateTime(2026),
+              entries: const [],
+              dailyScore: null,
+            ),
           ),
         ],
         child: const RoutineOSApp(),

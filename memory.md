@@ -11,6 +11,7 @@
 - Phase 5 Focus Session is implemented.
 - Phase 6 Local Reminders is implemented.
 - Phase 7 Recovery System is implemented.
+- Phase 8 Daily Score is implemented.
 
 ## Completed
 
@@ -68,6 +69,11 @@
 - Added Today repository recovery methods that save rescheduled logs and recovery notes locally.
 - Updated routine cards to support additional contextual action buttons.
 - Added recovery tests for missed routine rescheduling and recovered mini focus sessions.
+- Added a local daily score calculator using the planned 40/20/20/10/10 weighted formula.
+- Added `DailyScoreRepository` to calculate and persist score breakdowns in `daily_scores`.
+- Recalculate and save daily scores when Today loads and when Focus sessions finish.
+- Updated Today screen to show the stored daily score plus a breakdown message.
+- Added score calculator tests and persistence checks for Today and Focus flows.
 
 ## Commands Run
 
@@ -79,6 +85,10 @@
 - `flutter test`
 - `flutter clean; flutter pub get; flutter build apk --debug`
 - `flutter pub run build_runner build --delete-conflicting-outputs`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
+- `dart format lib test`
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
@@ -114,15 +124,16 @@
 - Focus repository save test: passed.
 - Notification scheduler tests: passed.
 - Recovery system tests: passed.
+- Daily score tests: passed.
 
 ## Known Issues
 
 - Package resolver reports newer incompatible package versions are available. This is informational and does not block the build.
 - `build_runner` reports that `--delete-conflicting-outputs` was ignored because the installed version no longer uses that option.
 - Analytics logic and Smart Coach rules are intentionally not implemented yet.
-- Today timeline uses a simple progress percentage from completion logs. The formal daily productivity score table is still for the Daily Score phase.
 - Reminder timezone currently defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
 - Move-to-tomorrow recovery is stored as a rescheduled log note for now; a richer future version can create one-off tomorrow schedule instances.
+- Today still shows a simple progress card alongside the formal daily score card.
 
 ## Important Rules
 
@@ -134,10 +145,9 @@
 
 ## Next Recommended Step
 
-Begin Phase 8: Daily Score.
+Begin Phase 9: Calendar.
 
-- Implement score calculator.
-- Calculate score from logs and focus sessions.
-- Save daily scores.
-- Show score card on Today screen.
-- Refresh score after completion, skip, recovery, or focus finish.
+- Add table calendar.
+- Load selected date data.
+- Show completed, skipped, missed, and planned routines.
+- Show selected date score.

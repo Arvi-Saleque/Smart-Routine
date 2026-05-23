@@ -70,12 +70,15 @@ class _TodayBody extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         ScoreCard(
+          title: 'Daily score',
+          score: timeline.dailyScore?.score,
+          message: timeline.scoreMessage,
+        ),
+        const SizedBox(height: 12),
+        ScoreCard(
           title: 'Daily progress',
           score: timeline.progressScore,
-          message: timeline.entries.isEmpty
-              ? 'Create routines to start tracking today.'
-              : '${timeline.completedCount}/${timeline.entries.length} completed, '
-                    '${timeline.skippedCount} skipped, ${timeline.missedCount} missed.',
+          message: timeline.progressMessage,
         ),
         const SizedBox(height: 24),
         const SectionHeader(

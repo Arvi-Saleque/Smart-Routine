@@ -6,12 +6,19 @@ import '../../../core/enums/routine_status.dart';
 import '../../../core/utils/date_time_utils.dart';
 import '../../../core/utils/recurrence_utils.dart';
 import '../../routines/data/routine_repository.dart';
+import 'daily_score_repository.dart';
 
 class TodayRepository {
-  TodayRepository(this._database, {Uuid? uuid}) : _uuid = uuid ?? const Uuid();
+  TodayRepository(
+    this._database, {
+    Uuid? uuid,
+    DailyScoreRepository? scoreRepository,
+  }) : _uuid = uuid ?? const Uuid(),
+       _scoreRepository = scoreRepository ?? DailyScoreRepository(_database);
 
   final AppDatabase _database;
   final Uuid _uuid;
+  final DailyScoreRepository _scoreRepository;
 
   Future<TodayTimeline> getTimelineForDate(
     DateTime date, {
@@ -86,7 +93,12 @@ class TodayRepository {
       );
     }).toList();
 
-    return TodayTimeline(date: date, entries: entries);
+    final dailyScore = await _scoreRepository.calculateAndSaveForDate(
+      date,
+      now: currentTime,
+    );
+
+    return TodayTimeline(date: date, entries: entries, dailyScore: dailyScore);
   }
 
   Future<void> markCompleted(TodayTimelineEntry entry) async {
@@ -239,10 +251,15 @@ class TodayRepository {
 }
 
 class TodayTimeline {
-  const TodayTimeline({required this.date, required this.entries});
+  const TodayTimeline({
+    required this.date,
+    required this.entries,
+    required this.dailyScore,
+  });
 
   final DateTime date;
   final List<TodayTimelineEntry> entries;
+  final DailyScore? dailyScore;
 
   TodayTimelineEntry? get activeEntry {
     for (final entry in entries) {
@@ -283,6 +300,24 @@ class TodayTimeline {
   int? get progressScore {
     if (entries.isEmpty) return null;
     return ((completedCount / entries.length) * 100).round();
+  }
+
+  String get scoreMessage {
+    final score = dailyScore;
+    if (entries.isEmpty || score == null) {
+      return 'Create routines to start tracking today.';
+    }
+    return 'Completion ${score.completionScore}/40, on-time ${score.onTimeScore}/20, '
+        'focus ${score.focusScore}/20, recovery ${score.recoveryScore}/10, '
+        'balance ${score.balanceScore}/10.';
+  }
+
+  String get progressMessage {
+    if (entries.isEmpty) {
+      return 'The timeline is ready for your first routine block.';
+    }
+    return '$completedCount/${entries.length} completed, '
+        '$skippedCount skipped, $missedCount missed.';
   }
 }
 

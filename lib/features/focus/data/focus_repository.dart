@@ -5,12 +5,19 @@ import '../../../core/database/app_database.dart';
 import '../../../core/enums/routine_status.dart';
 import '../../../core/utils/date_time_utils.dart';
 import '../../routines/data/routine_repository.dart';
+import '../../today/data/daily_score_repository.dart';
 
 class FocusRepository {
-  FocusRepository(this._database, {Uuid? uuid}) : _uuid = uuid ?? const Uuid();
+  FocusRepository(
+    this._database, {
+    Uuid? uuid,
+    DailyScoreRepository? scoreRepository,
+  }) : _uuid = uuid ?? const Uuid(),
+       _scoreRepository = scoreRepository ?? DailyScoreRepository(_database);
 
   final AppDatabase _database;
   final Uuid _uuid;
+  final DailyScoreRepository _scoreRepository;
 
   Future<FocusSaveResult> finishSession(FocusSessionDraft draft) async {
     final dateKey = DateTimeUtils.dateKey(draft.startedAt);
@@ -22,7 +29,7 @@ class FocusRepository {
         ? 1
         : draft.actualDuration.inMinutes;
 
-    return _database.transaction(() async {
+    final result = await _database.transaction(() async {
       final existingLog =
           await (_database.select(_database.routineLogs)
                 ..where(
@@ -101,6 +108,13 @@ class FocusRepository {
         actualDurationMinutes: actualMinutes,
       );
     });
+
+    await _scoreRepository.calculateAndSaveForDate(
+      draft.startedAt,
+      now: draft.endedAt,
+    );
+
+    return result;
   }
 
   Stream<List<FocusSession>> watchSessionsForRoutine(String routineId) {

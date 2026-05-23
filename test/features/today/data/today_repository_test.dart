@@ -67,6 +67,12 @@ void main() {
     expect(timeline.entries.single.status, RoutineStatus.completed);
     expect(timeline.completedCount, 1);
     expect(timeline.progressScore, 100);
+    expect(timeline.dailyScore, isNotNull);
+    expect(timeline.dailyScore!.score, greaterThan(0));
+
+    final savedScore = await database.select(database.dailyScores).get();
+    expect(savedScore, hasLength(1));
+    expect(savedScore.single.date, timeline.entries.single.dateKey);
 
     await todayRepository.markSkipped(
       timeline.entries.single,

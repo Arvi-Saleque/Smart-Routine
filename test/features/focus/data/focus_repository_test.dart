@@ -76,6 +76,10 @@ void main() {
     expect(logs.single.actualDurationMinutes, 42);
     expect(logs.single.completionValue, 42);
     expect(logs.single.note, 'Solved dynamic programming problems.');
+
+    final scores = await database.select(database.dailyScores).get();
+    expect(scores, hasLength(1));
+    expect(scores.single.focusScore, 14);
   });
 
   test('can save a mini recovery session as recovered', () async {
@@ -119,5 +123,8 @@ void main() {
     expect(logs.single.status, RoutineStatus.recovered.name);
     expect(logs.single.actualDurationMinutes, 5);
     expect(logs.single.note, 'Mini recovery done.');
+
+    final scores = await database.select(database.dailyScores).get();
+    expect(scores.single.recoveryScore, 10);
   });
 }
