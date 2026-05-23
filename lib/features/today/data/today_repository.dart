@@ -26,8 +26,10 @@ class TodayRepository {
   }) async {
     final dateKey = DateTimeUtils.dateKey(date);
     final currentTime = now ?? DateTime.now();
+    final currentDateKey = DateTimeUtils.dateKey(currentTime);
     final currentMinutes = currentTime.hour * 60 + currentTime.minute;
-    final isToday = DateTimeUtils.dateKey(currentTime) == dateKey;
+    final isToday = currentDateKey == dateKey;
+    final isPast = dateKey.compareTo(currentDateKey) < 0;
 
     final routineRows = await (_database.select(_database.routines).join([
       innerJoin(
@@ -80,6 +82,7 @@ class TodayRepository {
       final status = _resolveStatus(
         log: log,
         isToday: isToday,
+        isPast: isPast,
         currentMinutes: currentMinutes,
         startMinutes: schedule.startTimeMinutes,
         endMinutes: schedule.endTimeMinutes,
@@ -234,6 +237,7 @@ class TodayRepository {
   RoutineStatus _resolveStatus({
     required RoutineLog? log,
     required bool isToday,
+    required bool isPast,
     required int currentMinutes,
     required int startMinutes,
     required int endMinutes,
@@ -241,6 +245,7 @@ class TodayRepository {
     if (log != null) {
       return RoutineStatus.values.byName(log.status);
     }
+    if (isPast) return RoutineStatus.missed;
     if (!isToday) return RoutineStatus.upcoming;
     if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
       return RoutineStatus.active;

@@ -12,6 +12,7 @@
 - Phase 6 Local Reminders is implemented.
 - Phase 7 Recovery System is implemented.
 - Phase 8 Daily Score is implemented.
+- Phase 9 Calendar is implemented.
 
 ## Completed
 
@@ -74,6 +75,11 @@
 - Recalculate and save daily scores when Today loads and when Focus sessions finish.
 - Updated Today screen to show the stored daily score plus a breakdown message.
 - Added score calculator tests and persistence checks for Today and Focus flows.
+- Replaced the Calendar placeholder with a real `table_calendar` monthly view.
+- Added `CalendarRepository` month summaries with planned, completed, skipped, missed, recovered, rescheduled, and score markers.
+- Added selected-day details on the Calendar screen with score, status totals, and read-only routine cards.
+- Updated selected past days to show unlogged planned routines as missed.
+- Added a Calendar repository test covering month markers and selected date score activity.
 
 ## Commands Run
 
@@ -85,6 +91,10 @@
 - `flutter test`
 - `flutter clean; flutter pub get; flutter build apk --debug`
 - `flutter pub run build_runner build --delete-conflicting-outputs`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
+- `dart format lib test`
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
@@ -125,6 +135,7 @@
 - Notification scheduler tests: passed.
 - Recovery system tests: passed.
 - Daily score tests: passed.
+- Calendar repository tests: passed.
 
 ## Known Issues
 
@@ -134,6 +145,7 @@
 - Reminder timezone currently defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
 - Move-to-tomorrow recovery is stored as a rescheduled log note for now; a richer future version can create one-off tomorrow schedule instances.
 - Today still shows a simple progress card alongside the formal daily score card.
+- Calendar markers use compact activity bars; richer per-status marker legends can be added during polish.
 
 ## Important Rules
 
@@ -145,9 +157,11 @@
 
 ## Next Recommended Step
 
-Begin Phase 9: Calendar.
+Begin Phase 10: Analytics.
 
-- Add table calendar.
-- Load selected date data.
-- Show completed, skipped, missed, and planned routines.
-- Show selected date score.
+- Add analytics repository queries.
+- Add daily score chart.
+- Add weekly completion chart.
+- Add category completion chart.
+- Add focus minutes chart.
+- Show most skipped routine and recovery rate.
