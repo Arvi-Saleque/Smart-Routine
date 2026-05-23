@@ -39,3 +39,19 @@ class CategoryChip extends StatelessWidget {
     );
   }
 }
+
+IconData categoryIconFromName(String iconName) {
+  return switch (iconName) {
+    'menu_book' => Icons.menu_book_outlined,
+    'code' => Icons.code,
+    'work' => Icons.work_outline,
+    'school' => Icons.school_outlined,
+    'fitness_center' => Icons.fitness_center,
+    'self_improvement' => Icons.self_improvement,
+    'psychology' => Icons.psychology_outlined,
+    'coffee' => Icons.coffee_outlined,
+    'event_note' => Icons.event_note_outlined,
+    'home' => Icons.home_outlined,
+    _ => Icons.category_outlined,
+  };
+}

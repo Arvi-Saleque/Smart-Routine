@@ -6,6 +6,7 @@
 - `plan.md` defines the detailed implementation plan.
 - The MVP target is an offline-first Android Flutter app using Riverpod, go_router, Drift SQLite, local notifications, fl_chart, and table_calendar.
 - Phase 2 Drift database foundation is implemented.
+- Phase 3 Routine CRUD is implemented.
 
 ## Completed
 
@@ -30,6 +31,13 @@
 - Added `appDatabaseProvider` for Riverpod-managed database lifecycle.
 - Generated Drift code in `lib/core/database/app_database.g.dart`.
 - Added a database test that confirms default categories are seeded once.
+- Connected `RoutineRepository` to `AppDatabase`.
+- Implemented routine create, read, update, pause/activate, and delete operations with schedule persistence.
+- Added Riverpod providers for categories, routine lists, and routine detail streams.
+- Replaced routine placeholder screens with database-backed Routine List, Routine Form, and Routine Detail screens.
+- Added form validation for title, category, time range, repeat days, target value, and full/medium/mini duration order.
+- Added shared date/time and recurrence utilities for schedule formatting and repeat-day handling.
+- Added a repository test covering create, update, pause, and delete behavior.
 
 ## Commands Run
 
@@ -44,6 +52,10 @@
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
 
 ## Verification
 
@@ -51,12 +63,14 @@
 - `flutter test`: passed.
 - `flutter build apk --debug`: passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
 - Database seed test: passed.
+- Routine repository CRUD test: passed.
 
 ## Known Issues
 
 - Package resolver reports newer incompatible package versions are available. This is informational and does not block the build.
 - `build_runner` reports that `--delete-conflicting-outputs` was ignored because the installed version no longer uses that option.
-- Routine CRUD, local reminder scheduling, analytics logic, focus timer behavior, and Smart Coach rules are intentionally not implemented yet.
+- Today timeline still uses placeholder data and will be connected in Phase 4.
+- Local reminder scheduling, analytics logic, focus timer behavior, and Smart Coach rules are intentionally not implemented yet.
 
 ## Important Rules
 
@@ -68,10 +82,10 @@
 
 ## Next Recommended Step
 
-Begin Phase 3: Routine CRUD.
+Begin Phase 4: Today Timeline.
 
-- Connect `RoutineRepository` to `AppDatabase`.
-- Implement create, read, update, deactivate/delete, and schedule persistence.
-- Build the routine form fields and validation.
-- Load real routines in routine list and detail screens.
-- Keep Today timeline behavior for the next phase unless a small shared model is needed.
+- Load routines scheduled for the current date.
+- Merge routines with routine logs.
+- Detect upcoming, active, completed, skipped, and missed states.
+- Render real timeline cards on Today screen.
+- Implement complete and skip actions for today.
