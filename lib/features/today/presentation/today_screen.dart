@@ -144,11 +144,14 @@ class _TimelineRoutineCard extends ConsumerWidget {
     final detail = entry.detail;
     final status = entry.status;
     final isFinished =
-        status == RoutineStatus.completed || status == RoutineStatus.skipped;
+        status == RoutineStatus.completed ||
+        status == RoutineStatus.skipped ||
+        status == RoutineStatus.recovered;
+    final isMissed = status == RoutineStatus.missed;
 
     return RoutineCard(
       title: detail.routine.title,
-      timeRange: detail.scheduleLabel,
+      timeRange: entry.timeRangeLabel,
       status: status,
       category: CategoryChip(
         label: detail.category.name,
@@ -161,6 +164,26 @@ class _TimelineRoutineCard extends ConsumerWidget {
           : () => context.go('/focus/${detail.routine.id}'),
       onComplete: isFinished ? null : () => _markCompleted(context, ref),
       onSkip: isFinished ? null : () => _markSkipped(context, ref),
+      extraActions: isMissed
+          ? [
+              OutlinedButton.icon(
+                onPressed: () =>
+                    context.go('/focus/${detail.routine.id}?mode=mini'),
+                icon: const Icon(Icons.restart_alt),
+                label: const Text('Mini'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _rescheduleToday(context, ref),
+                icon: const Icon(Icons.schedule),
+                label: const Text('Later'),
+              ),
+              TextButton.icon(
+                onPressed: () => _moveToTomorrow(context, ref),
+                icon: const Icon(Icons.event_repeat),
+                label: const Text('Tomorrow'),
+              ),
+            ]
+          : const [],
     );
   }
 
@@ -196,6 +219,40 @@ class _TimelineRoutineCard extends ConsumerWidget {
     } catch (error) {
       messenger.showSnackBar(
         SnackBar(content: Text('Could not skip routine: $error')),
+      );
+    }
+  }
+
+  Future<void> _rescheduleToday(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(todayControllerProvider).rescheduleLaterToday(entry);
+      ref.invalidate(todayTimelineProvider);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('${entry.detail.routine.title} moved later today.'),
+        ),
+      );
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not reschedule routine: $error')),
+      );
+    }
+  }
+
+  Future<void> _moveToTomorrow(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(todayControllerProvider).moveToTomorrow(entry);
+      ref.invalidate(todayTimelineProvider);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('${entry.detail.routine.title} moved to tomorrow.'),
+        ),
+      );
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not move routine: $error')),
       );
     }
   }

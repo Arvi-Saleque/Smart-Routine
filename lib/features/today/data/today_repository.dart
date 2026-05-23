@@ -113,17 +113,64 @@ class TodayRepository {
     );
   }
 
+  Future<void> rescheduleLaterToday(TodayTimelineEntry entry) async {
+    final now = DateTime.now();
+    final schedule = entry.detail.schedule!;
+    final plannedDuration = schedule.endTimeMinutes - schedule.startTimeMinutes;
+    final currentMinutes = now.hour * 60 + now.minute;
+    final earliestRecoveryStart = schedule.endTimeMinutes + 1;
+    final candidateStart = currentMinutes + 30;
+    final nextStart = _clampToToday(
+      candidateStart < earliestRecoveryStart
+          ? earliestRecoveryStart
+          : candidateStart,
+      plannedDuration: plannedDuration,
+    );
+
+    await _upsertLog(
+      entry: entry,
+      status: RoutineStatus.rescheduled,
+      plannedStartTimeMinutes: nextStart,
+      plannedEndTimeMinutes: nextStart + plannedDuration,
+      note:
+          'Rescheduled for ${DateTimeUtils.formatTimeRange(nextStart, nextStart + plannedDuration)}.',
+      updatedAt: now,
+    );
+  }
+
+  Future<void> moveToTomorrow(TodayTimelineEntry entry) async {
+    final now = DateTime.now();
+    final tomorrow = DateTimeUtils.dateKey(now.add(const Duration(days: 1)));
+    await _upsertLog(
+      entry: entry,
+      status: RoutineStatus.rescheduled,
+      note: 'Moved to $tomorrow.',
+      updatedAt: now,
+    );
+  }
+
   Future<void> _upsertLog({
     required TodayTimelineEntry entry,
     required RoutineStatus status,
     required DateTime updatedAt,
+    int? plannedStartTimeMinutes,
+    int? plannedEndTimeMinutes,
     DateTime? actualStartAt,
     DateTime? actualEndAt,
     int? actualDurationMinutes,
     String? skipReason,
+    String? note,
   }) async {
     final schedule = entry.detail.schedule!;
     final existingLog = entry.log;
+    final plannedStart =
+        plannedStartTimeMinutes ??
+        existingLog?.plannedStartTimeMinutes ??
+        schedule.startTimeMinutes;
+    final plannedEnd =
+        plannedEndTimeMinutes ??
+        existingLog?.plannedEndTimeMinutes ??
+        schedule.endTimeMinutes;
 
     if (existingLog == null) {
       await _database
@@ -134,12 +181,13 @@ class TodayRepository {
               routineId: entry.detail.routine.id,
               date: entry.dateKey,
               status: status.name,
-              plannedStartTimeMinutes: schedule.startTimeMinutes,
-              plannedEndTimeMinutes: schedule.endTimeMinutes,
+              plannedStartTimeMinutes: plannedStart,
+              plannedEndTimeMinutes: plannedEnd,
               actualStartAt: Value(actualStartAt),
               actualEndAt: Value(actualEndAt),
               actualDurationMinutes: Value(actualDurationMinutes),
               skipReason: Value(skipReason),
+              note: Value(note),
               createdAt: updatedAt,
               updatedAt: updatedAt,
             ),
@@ -152,13 +200,23 @@ class TodayRepository {
     )..where((table) => table.id.equals(existingLog.id))).write(
       RoutineLogsCompanion(
         status: Value(status.name),
+        plannedStartTimeMinutes: Value(plannedStart),
+        plannedEndTimeMinutes: Value(plannedEnd),
         actualStartAt: Value(actualStartAt),
         actualEndAt: Value(actualEndAt),
         actualDurationMinutes: Value(actualDurationMinutes),
         skipReason: Value(skipReason),
+        note: Value(note),
         updatedAt: Value(updatedAt),
       ),
     );
+  }
+
+  int _clampToToday(int startMinutes, {required int plannedDuration}) {
+    const lastMinute = (24 * 60) - 1;
+    final latestStart = lastMinute - plannedDuration;
+    if (latestStart <= 0) return 0;
+    return startMinutes.clamp(0, latestStart);
   }
 
   RoutineStatus _resolveStatus({
@@ -240,4 +298,23 @@ class TodayTimelineEntry {
   final RoutineLog? log;
   final RoutineStatus status;
   final String dateKey;
+
+  String get timeRangeLabel {
+    final log = this.log;
+    if (log != null &&
+        (status == RoutineStatus.rescheduled ||
+            status == RoutineStatus.recovered)) {
+      return DateTimeUtils.formatTimeRange(
+        log.plannedStartTimeMinutes,
+        log.plannedEndTimeMinutes,
+      );
+    }
+    return detail.scheduleLabel;
+  }
+
+  String? get recoveryNote {
+    final note = log?.note?.trim();
+    if (note == null || note.isEmpty) return null;
+    return note;
+  }
 }

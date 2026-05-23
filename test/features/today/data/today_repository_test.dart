@@ -80,4 +80,55 @@ void main() {
     expect(timeline.entries.single.status, RoutineStatus.skipped);
     expect(timeline.skippedCount, 1);
   });
+
+  test('reschedules missed routines and keeps recovery notes', () async {
+    final date = DateTime.now();
+
+    await routineRepository.createRoutine(
+      RoutineFormData(
+        title: 'Night reading',
+        categoryId: 'reading',
+        routineType: RoutineType.fixedTime,
+        goalType: GoalType.duration,
+        targetValue: 30,
+        targetUnit: 'minutes',
+        priority: PriorityLevel.medium,
+        difficulty: DifficultyLevel.normal,
+        startTimeMinutes: 60,
+        endTimeMinutes: 90,
+        repeatDays: {date.weekday},
+        fullDurationMinutes: 30,
+        mediumDurationMinutes: 20,
+        miniDurationMinutes: 5,
+        reminderEnabled: true,
+        timezone: 'Asia/Dhaka',
+      ),
+    );
+
+    var timeline = await todayRepository.getTimelineForDate(
+      date,
+      now: DateTime(date.year, date.month, date.day, 10),
+    );
+    expect(timeline.entries.single.status, RoutineStatus.missed);
+
+    await todayRepository.rescheduleLaterToday(timeline.entries.single);
+    timeline = await todayRepository.getTimelineForDate(
+      date,
+      now: DateTime(date.year, date.month, date.day, 10),
+    );
+
+    final rescheduled = timeline.entries.single;
+    expect(rescheduled.status, RoutineStatus.rescheduled);
+    expect(rescheduled.log!.plannedStartTimeMinutes, greaterThan(90));
+    expect(rescheduled.recoveryNote, contains('Rescheduled for'));
+
+    await todayRepository.moveToTomorrow(rescheduled);
+    timeline = await todayRepository.getTimelineForDate(
+      date,
+      now: DateTime(date.year, date.month, date.day, 10),
+    );
+
+    expect(timeline.entries.single.status, RoutineStatus.rescheduled);
+    expect(timeline.entries.single.recoveryNote, contains('Moved to'));
+  });
 }

@@ -10,6 +10,7 @@
 - Phase 4 Today Timeline is implemented.
 - Phase 5 Focus Session is implemented.
 - Phase 6 Local Reminders is implemented.
+- Phase 7 Recovery System is implemented.
 
 ## Completed
 
@@ -62,6 +63,11 @@
 - Added a shared_preferences-backed global routine reminders toggle on the Settings screen.
 - Added scheduler tests for fixed-time reminder scheduling, non-schedulable routine cancellation, and global reminder disable behavior.
 - Extended routine repository tests to protect paused routines from being rescheduled by edits.
+- Added recovery actions to missed routine cards: mini recovery, reschedule later today, move to tomorrow, and skip.
+- Added mini recovery mode for the Focus screen using the routine mini duration and saving logs with `recovered` status.
+- Added Today repository recovery methods that save rescheduled logs and recovery notes locally.
+- Updated routine cards to support additional contextual action buttons.
+- Added recovery tests for missed routine rescheduling and recovered mini focus sessions.
 
 ## Commands Run
 
@@ -92,6 +98,10 @@
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
 
 ## Verification
 
@@ -103,6 +113,7 @@
 - Today repository timeline/log test: passed.
 - Focus repository save test: passed.
 - Notification scheduler tests: passed.
+- Recovery system tests: passed.
 
 ## Known Issues
 
@@ -111,6 +122,7 @@
 - Analytics logic and Smart Coach rules are intentionally not implemented yet.
 - Today timeline uses a simple progress percentage from completion logs. The formal daily productivity score table is still for the Daily Score phase.
 - Reminder timezone currently defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
+- Move-to-tomorrow recovery is stored as a rescheduled log note for now; a richer future version can create one-off tomorrow schedule instances.
 
 ## Important Rules
 
@@ -122,9 +134,10 @@
 
 ## Next Recommended Step
 
-Begin Phase 7: Recovery System.
+Begin Phase 8: Daily Score.
 
-- Add recovery options to missed routine cards.
-- Start mini version from missed state.
-- Reschedule missed routines for later today or tomorrow.
-- Save recovered and skipped states in logs.
+- Implement score calculator.
+- Calculate score from logs and focus sessions.
+- Save daily scores.
+- Show score card on Today screen.
+- Refresh score after completion, skip, recovery, or focus finish.

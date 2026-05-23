@@ -49,7 +49,7 @@ class FocusRepository {
                 id: routineLogId,
                 routineId: routine.id,
                 date: dateKey,
-                status: RoutineStatus.completed.name,
+                status: draft.completionStatus.name,
                 plannedStartTimeMinutes: plannedStart,
                 plannedEndTimeMinutes: plannedEnd,
                 actualStartAt: Value(draft.startedAt),
@@ -66,7 +66,7 @@ class FocusRepository {
           _database.routineLogs,
         )..where((table) => table.id.equals(existingLog.id))).write(
           RoutineLogsCompanion(
-            status: Value(RoutineStatus.completed.name),
+            status: Value(draft.completionStatus.name),
             actualStartAt: Value(draft.startedAt),
             actualEndAt: Value(now),
             actualDurationMinutes: Value(actualMinutes),
@@ -126,6 +126,7 @@ class FocusSessionDraft {
     required this.plannedDurationMinutes,
     required this.distractionCount,
     required this.note,
+    this.completionStatus = RoutineStatus.completed,
   });
 
   final RoutineDetail routineDetail;
@@ -135,6 +136,7 @@ class FocusSessionDraft {
   final int plannedDurationMinutes;
   final int distractionCount;
   final String note;
+  final RoutineStatus completionStatus;
 }
 
 class FocusSaveResult {

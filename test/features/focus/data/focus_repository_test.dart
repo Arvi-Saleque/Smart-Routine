@@ -77,4 +77,47 @@ void main() {
     expect(logs.single.completionValue, 42);
     expect(logs.single.note, 'Solved dynamic programming problems.');
   });
+
+  test('can save a mini recovery session as recovered', () async {
+    final routineId = await routineRepository.createRoutine(
+      const RoutineFormData(
+        title: 'Prayer recovery',
+        categoryId: 'spiritual',
+        routineType: RoutineType.fixedTime,
+        goalType: GoalType.duration,
+        targetValue: 10,
+        targetUnit: 'minutes',
+        priority: PriorityLevel.high,
+        difficulty: DifficultyLevel.easy,
+        startTimeMinutes: 300,
+        endTimeMinutes: 330,
+        repeatDays: {1, 2, 3, 4, 5, 6, 7},
+        fullDurationMinutes: 30,
+        mediumDurationMinutes: 15,
+        miniDurationMinutes: 5,
+        reminderEnabled: true,
+        timezone: 'Asia/Dhaka',
+      ),
+    );
+    final detail = await routineRepository.getRoutineDetail(routineId);
+    final startedAt = DateTime(2026, 5, 18, 22);
+
+    await focusRepository.finishSession(
+      FocusSessionDraft(
+        routineDetail: detail!,
+        startedAt: startedAt,
+        endedAt: DateTime(2026, 5, 18, 22, 5),
+        actualDuration: const Duration(minutes: 5),
+        plannedDurationMinutes: 5,
+        distractionCount: 0,
+        note: 'Mini recovery done.',
+        completionStatus: RoutineStatus.recovered,
+      ),
+    );
+
+    final logs = await database.select(database.routineLogs).get();
+    expect(logs.single.status, RoutineStatus.recovered.name);
+    expect(logs.single.actualDurationMinutes, 5);
+    expect(logs.single.note, 'Mini recovery done.');
+  });
 }

@@ -48,6 +48,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         return FocusSessionScreen(
           routineId: state.pathParameters['routineId'] ?? '',
+          recoveryMode: state.uri.queryParameters['mode'] == 'mini',
         );
       },
     ),

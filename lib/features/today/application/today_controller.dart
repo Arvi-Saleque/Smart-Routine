@@ -13,4 +13,12 @@ class TodayController {
   Future<void> markSkipped(TodayTimelineEntry entry, SkipReason reason) {
     return _repository.markSkipped(entry, reason.name);
   }
+
+  Future<void> rescheduleLaterToday(TodayTimelineEntry entry) {
+    return _repository.rescheduleLaterToday(entry);
+  }
+
+  Future<void> moveToTomorrow(TodayTimelineEntry entry) {
+    return _repository.moveToTomorrow(entry);
+  }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/enums/routine_status.dart';
 import '../../../shared/extensions/duration_extensions.dart';
 import '../../../shared/widgets/app_scaffold.dart';
 import '../../../shared/widgets/category_chip.dart';
@@ -15,9 +16,14 @@ import '../application/focus_providers.dart';
 import '../data/focus_repository.dart';
 
 class FocusSessionScreen extends ConsumerStatefulWidget {
-  const FocusSessionScreen({super.key, required this.routineId});
+  const FocusSessionScreen({
+    super.key,
+    required this.routineId,
+    this.recoveryMode = false,
+  });
 
   final String routineId;
+  final bool recoveryMode;
 
   @override
   ConsumerState<FocusSessionScreen> createState() => _FocusSessionScreenState();
@@ -80,9 +86,10 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> {
   }
 
   Widget _buildFocusBody(BuildContext context, RoutineDetail detail) {
-    final plannedDuration = Duration(
-      minutes: detail.routine.fullDurationMinutes,
-    );
+    final plannedMinutes = widget.recoveryMode
+        ? detail.routine.miniDurationMinutes
+        : detail.routine.fullDurationMinutes;
+    final plannedDuration = Duration(minutes: plannedMinutes);
     final progress = plannedDuration.inSeconds == 0
         ? 0.0
         : (_elapsed.inSeconds / plannedDuration.inSeconds).clamp(0.0, 1.0);
@@ -91,7 +98,9 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         SectionHeader(
-          title: detail.routine.title,
+          title: widget.recoveryMode
+              ? '${detail.routine.title} mini recovery'
+              : detail.routine.title,
           subtitle: detail.scheduleLabel,
           trailing: CategoryChip(
             label: detail.category.name,
@@ -283,9 +292,14 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> {
               startedAt: startedAt,
               endedAt: endedAt,
               actualDuration: actualElapsed,
-              plannedDurationMinutes: detail.routine.fullDurationMinutes,
+              plannedDurationMinutes: widget.recoveryMode
+                  ? detail.routine.miniDurationMinutes
+                  : detail.routine.fullDurationMinutes,
               distractionCount: _distractionCount,
               note: _noteController.text,
+              completionStatus: widget.recoveryMode
+                  ? RoutineStatus.recovered
+                  : RoutineStatus.completed,
             ),
           );
       ref.invalidate(focusSessionsProvider(widget.routineId));

@@ -13,6 +13,7 @@ class RoutineCard extends StatelessWidget {
     this.onStart,
     this.onComplete,
     this.onSkip,
+    this.extraActions = const [],
   });
 
   final String title;
@@ -23,6 +24,7 @@ class RoutineCard extends StatelessWidget {
   final VoidCallback? onStart;
   final VoidCallback? onComplete;
   final VoidCallback? onSkip;
+  final List<Widget> extraActions;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +80,10 @@ class RoutineCard extends StatelessWidget {
                 ],
               ),
             ],
-            if (onStart != null || onComplete != null || onSkip != null) ...[
+            if (onStart != null ||
+                onComplete != null ||
+                onSkip != null ||
+                extraActions.isNotEmpty) ...[
               const SizedBox(height: 14),
               Wrap(
                 spacing: 8,
@@ -102,6 +107,7 @@ class RoutineCard extends StatelessWidget {
                       icon: const Icon(Icons.skip_next_outlined),
                       label: const Text('Skip'),
                     ),
+                  ...extraActions,
                 ],
               ),
             ],
