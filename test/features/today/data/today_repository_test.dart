@@ -260,4 +260,46 @@ void main() {
     expect(logs, hasLength(1));
     expect(logs.single.status, RoutineStatus.skipped.name);
   });
+
+  test(
+    'future date preview shows planned routines without saving score',
+    () async {
+      final now = DateTime(2026, 5, 18, 9);
+      final futureDate = DateTime(2026, 5, 19);
+
+      await routineRepository.createRoutine(
+        RoutineFormData(
+          title: 'Future reading',
+          categoryId: 'reading',
+          routineType: RoutineType.fixedTime,
+          goalType: GoalType.duration,
+          targetValue: 30,
+          targetUnit: 'minutes',
+          priority: PriorityLevel.medium,
+          difficulty: DifficultyLevel.normal,
+          startTimeMinutes: 600,
+          endTimeMinutes: 660,
+          repeatDays: {futureDate.weekday},
+          fullDurationMinutes: 60,
+          mediumDurationMinutes: 30,
+          miniDurationMinutes: 10,
+          reminderEnabled: true,
+          timezone: 'Asia/Dhaka',
+        ),
+      );
+
+      final timeline = await todayRepository.getTimelineForDate(
+        futureDate,
+        now: now,
+      );
+
+      expect(timeline.entries, hasLength(1));
+      expect(timeline.entries.single.status, RoutineStatus.upcoming);
+      expect(timeline.dailyScore, isNull);
+      expect(timeline.scoreMessage, 'No saved score for this date yet.');
+
+      final savedScores = await database.select(database.dailyScores).get();
+      expect(savedScores, isEmpty);
+    },
+  );
 }

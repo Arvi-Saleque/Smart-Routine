@@ -182,15 +182,30 @@
 - Local data reset test: passed.
 - Android local notification scheduler tests: passed.
 - Today timeline correctness tests: passed.
+- Daily score side-effect tests: passed.
+- Calendar score preview tests: passed.
 
 ## Known Issues
 
 - Package resolver reports newer incompatible package versions are available. This is informational and does not block the build.
 - `build_runner` reports that `--delete-conflicting-outputs` was ignored because the installed version no longer uses that option.
 - Reminder timezone currently defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
-- Move-to-tomorrow recovery is stored as a rescheduled log note for now; a richer future version can create one-off tomorrow schedule instances.
 - Today still shows a simple progress card alongside the formal daily score card.
 - Calendar markers use compact activity bars; richer per-status marker legends can be added during polish.
+
+## Latest Update: Daily Score and Calendar Side Effects
+
+- Moved the real `ScoreCalculator` into `lib/core/utils/score_calculator.dart`.
+- Removed the old feature-local score calculator file.
+- Updated daily score imports to use the shared core calculator.
+- Changed recovery scoring so `recoveryOpportunityCount == 0` awards `0` recovery points instead of `10`.
+- Added `saveScore` support to `TodayRepository.getTimelineForDate`; future dates never save or show a daily score.
+- Calendar selected-day preview now calls the Today timeline in read-only score mode with `saveScore: false`.
+- Future date previews still show planned routines as upcoming, without marking them missed and without writing `daily_scores`.
+- Added regression tests for recovery scoring, empty score state, future preview score writes, and calendar read-only preview behavior.
+- Ran `dart format lib test`.
+- Ran `flutter analyze`: passed with no issues.
+- Ran `flutter test`: passed.
 
 ## Important Rules
 

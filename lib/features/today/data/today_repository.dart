@@ -23,6 +23,7 @@ class TodayRepository {
   Future<TodayTimeline> getTimelineForDate(
     DateTime date, {
     DateTime? now,
+    bool saveScore = true,
   }) async {
     final dateKey = DateTimeUtils.dateKey(date);
     final currentTime = now ?? DateTime.now();
@@ -93,10 +94,12 @@ class TodayRepository {
       );
     }).toList();
 
-    final dailyScore = await _scoreRepository.calculateAndSaveForDate(
-      date,
-      now: currentTime,
-    );
+    final isFuture = dateKey.compareTo(currentDateKey) > 0;
+    final dailyScore = isFuture
+        ? null
+        : saveScore
+        ? await _scoreRepository.calculateAndSaveForDate(date, now: currentTime)
+        : await _scoreRepository.getScoreForDateKey(dateKey);
 
     return TodayTimeline(date: date, entries: entries, dailyScore: dailyScore);
   }
@@ -355,9 +358,10 @@ class TodayTimeline {
 
   String get scoreMessage {
     final score = dailyScore;
-    if (entries.isEmpty || score == null) {
+    if (entries.isEmpty) {
       return 'Create routines to start tracking today.';
     }
+    if (score == null) return 'No saved score for this date yet.';
     return 'Completion ${score.completionScore}/40, on-time ${score.onTimeScore}/20, '
         'focus ${score.focusScore}/20, recovery ${score.recoveryScore}/10, '
         'balance ${score.balanceScore}/10.';

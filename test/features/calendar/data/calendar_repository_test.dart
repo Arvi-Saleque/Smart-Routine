@@ -77,6 +77,55 @@ void main() {
     expect(marker.missedCount, 1);
     expect(marker.score, isNotNull);
   });
+
+  test('calendar selected-day preview does not write score', () async {
+    final date = DateTime(2026, 5, 18);
+
+    await _createRoutine(
+      routineRepository,
+      title: 'Preview reading',
+      startTimeMinutes: 600,
+      endTimeMinutes: 660,
+      weekday: date.weekday,
+    );
+
+    final timeline = await todayRepository.getTimelineForDate(
+      date,
+      now: DateTime(2026, 5, 18, 10, 30),
+      saveScore: false,
+    );
+
+    expect(timeline.entries, hasLength(1));
+    expect(timeline.dailyScore, isNull);
+
+    final savedScores = await database.select(database.dailyScores).get();
+    expect(savedScores, isEmpty);
+  });
+
+  test('calendar future date selection does not write score', () async {
+    final now = DateTime(2026, 5, 18, 9);
+    final futureDate = DateTime(2026, 5, 19);
+
+    await _createRoutine(
+      routineRepository,
+      title: 'Future preview reading',
+      startTimeMinutes: 600,
+      endTimeMinutes: 660,
+      weekday: futureDate.weekday,
+    );
+
+    final timeline = await todayRepository.getTimelineForDate(
+      futureDate,
+      now: now,
+      saveScore: false,
+    );
+
+    expect(timeline.entries, hasLength(1));
+    expect(timeline.dailyScore, isNull);
+
+    final savedScores = await database.select(database.dailyScores).get();
+    expect(savedScores, isEmpty);
+  });
 }
 
 Future<void> _createRoutine(

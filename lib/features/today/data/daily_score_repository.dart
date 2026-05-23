@@ -4,7 +4,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/enums/routine_status.dart';
 import '../../../core/utils/date_time_utils.dart';
 import '../../../core/utils/recurrence_utils.dart';
-import 'score_calculator.dart';
+import '../../../core/utils/score_calculator.dart';
 
 class DailyScoreRepository {
   DailyScoreRepository(

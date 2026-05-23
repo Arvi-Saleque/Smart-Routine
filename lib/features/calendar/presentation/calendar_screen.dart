@@ -103,7 +103,9 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
   }
 
   Future<TodayTimeline> _loadSelectedTimeline() {
-    return ref.read(todayRepositoryProvider).getTimelineForDate(_selectedDay);
+    return ref
+        .read(todayRepositoryProvider)
+        .getTimelineForDate(_selectedDay, saveScore: false);
   }
 
   void _selectDay(DateTime selected, DateTime focused) {
