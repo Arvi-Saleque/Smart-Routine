@@ -4,25 +4,25 @@
 
 Always follow this order before making implementation decisions:
 
-1. Read `plan.md`.
-2. Read `memory.md`.
+1. Read `docs/plan.md`.
+2. Read `docs/memory.md`.
 3. Inspect the current repo state.
 4. Make the smallest useful implementation step.
-5. Update `memory.md`.
+5. Update `docs/memory.md`.
 6. Commit with a clear message.
 7. Push to the remote repository.
 
 ## Required Working Files
 
-### `plan.md`
+### `docs/plan.md`
 
-`plan.md` is the source of truth for the product, architecture, phases, feature order, and technical direction.
+`docs/plan.md` is the source of truth for the product, architecture, phases, feature order, and technical direction.
 
 Do not skip ahead into later phases unless the user explicitly asks.
 
-### `memory.md`
+### `docs/memory.md`
 
-`memory.md` must be maintained after every meaningful work portion.
+`docs/memory.md` must be maintained after every meaningful work portion.
 
 It should include:
 
@@ -53,7 +53,7 @@ Recommended commit message style:
 
 ## Implementation Order
 
-Follow the implementation phases in `plan.md`:
+Follow the implementation phases in `docs/plan.md`:
 
 1. Project setup and architecture
 2. Drift database foundation
@@ -116,9 +116,8 @@ Avoid childish UI, clutter, and placeholder pages that feel unfinished.
 
 Before ending a work session, make sure:
 
-- `memory.md` is updated.
+- `docs/memory.md` is updated.
 - Git status is checked.
 - The latest completed portion is committed.
 - The commit is pushed when possible.
 - The final response clearly states what changed, what was verified, and what remains next.
-

@@ -189,6 +189,7 @@
 - Settings clear-data test: passed.
 - Routine form validation tests: passed.
 - Reminder action-cancellation tests: passed.
+- Release-prep clean pipeline: passed.
 
 ## Known Issues
 
@@ -253,10 +254,25 @@
 - Ran `flutter analyze`: passed with no issues.
 - Ran `flutter test`: passed.
 
+## Latest Update: Release Prep Cleanup
+
+- Moved planning markdown files from the project root into `docs/`.
+- Updated `docs/instruction.md` references to `docs/plan.md` and `docs/memory.md`.
+- Removed local cache/build folders before the clean verification run: `.dart_tool/`, `build/`, `android/.gradle/`, and `android/.kotlin/`.
+- Added `android/.kotlin/` to `.gitignore`.
+- Rewrote `README.md` with app overview, offline-first scope, tech stack, run/codegen/test/build commands, Android notification notes, and MVP limitations.
+- Confirmed `pubspec.lock` and `lib/core/database/app_database.g.dart` remain present.
+- Ran `flutter clean`: passed.
+- Ran `flutter pub get`: passed.
+- Ran `dart run build_runner build --delete-conflicting-outputs`: passed; installed build_runner ignores that deprecated flag.
+- Ran `flutter analyze`: passed with no issues.
+- Ran `flutter test`: passed.
+- Ran `flutter build apk --debug`: passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
+
 ## Important Rules
 
-- Always read `plan.md` and `memory.md` before implementing.
-- Update `memory.md` after each meaningful portion.
+- Always read `docs/plan.md` and `docs/memory.md` before implementing.
+- Update `docs/memory.md` after each meaningful portion.
 - Commit with a proper message after each portion.
 - Push after each commit when possible.
 - Keep MVP free and offline-first.
@@ -266,5 +282,5 @@
 Manual APK testing and follow-up polish.
 
 - Install `build/app/outputs/flutter-apk/app-debug.apk` on an Android device.
-- Grant notification permission and exact alarm permission when required by the device.
+- Grant notification permission when prompted.
 - Create routines, complete/skip/recover/focus them, and review Today, Calendar, Analytics, Smart Coach, and Settings reset behavior.
