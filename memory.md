@@ -14,6 +14,7 @@
 - Phase 8 Daily Score is implemented.
 - Phase 9 Calendar is implemented.
 - Phase 10 Analytics is implemented.
+- Phase 11 Smart Coach is implemented.
 
 ## Completed
 
@@ -86,6 +87,10 @@
 - Added summary stat tiles for average score, completed routines, total focus minutes, recovery rate, and most skipped routine.
 - Added analytics empty states for missing score, completion, focus, and category data.
 - Added an Analytics repository test covering scores, completion, categories, focus, skips, and recovery.
+- Implemented a local `SmartCoachEngine` with overplanning, bad time, weak category, recovery, and good streak rules.
+- Added `SmartCoachRepository` to build coaching context from local routines, schedules, logs, and categories.
+- Replaced the Smart Coach placeholder with real rule-based insight cards and empty/error/loading states.
+- Added Smart Coach engine and repository tests covering generated insights and empty-data behavior.
 
 ## Commands Run
 
@@ -97,6 +102,10 @@
 - `flutter test`
 - `flutter clean; flutter pub get; flutter build apk --debug`
 - `flutter pub run build_runner build --delete-conflicting-outputs`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
+- `dart format lib test`
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
@@ -147,12 +156,12 @@
 - Daily score tests: passed.
 - Calendar repository tests: passed.
 - Analytics repository tests: passed.
+- Smart Coach tests: passed.
 
 ## Known Issues
 
 - Package resolver reports newer incompatible package versions are available. This is informational and does not block the build.
 - `build_runner` reports that `--delete-conflicting-outputs` was ignored because the installed version no longer uses that option.
-- Smart Coach rules are intentionally not implemented yet.
 - Reminder timezone currently defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
 - Move-to-tomorrow recovery is stored as a rescheduled log note for now; a richer future version can create one-off tomorrow schedule instances.
 - Today still shows a simple progress card alongside the formal daily score card.
@@ -168,8 +177,10 @@
 
 ## Next Recommended Step
 
-Begin Phase 11: Smart Coach.
+Begin Phase 12: Polish and Release Prep.
 
-- Implement `SmartCoachEngine`.
-- Add overplanning, bad time, weak category, recovery, and good streak rules.
-- Show local rule-based insight cards.
+- Improve responsiveness.
+- Add loading/error states where still thin.
+- Add confirmation dialogs for destructive actions.
+- Review Android notification permission setup notes.
+- Run full analysis, tests, and debug APK build.
