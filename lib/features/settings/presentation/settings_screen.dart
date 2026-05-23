@@ -1,17 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/app_database_provider.dart';
-import '../../../core/notifications/notification_providers.dart';
+import '../../../core/notifications/notification_settings.dart';
 import '../../../shared/widgets/app_scaffold.dart';
 import '../../../shared/widgets/section_header.dart';
+import '../application/settings_providers.dart';
+import '../data/settings_repository.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final remindersEnabled = ref.watch(remindersEnabledProvider);
+    final themeMode = ref
+        .watch(themeModeProvider)
+        .maybeWhen(data: (mode) => mode, orElse: () => ThemeMode.system);
+    final reminderSettings = ref
+        .watch(reminderSettingsProvider)
+        .maybeWhen(
+          data: (settings) => settings,
+          orElse: () => const ReminderSettings(),
+        );
+    final startOfWeek = ref
+        .watch(startOfWeekProvider)
+        .maybeWhen(data: (value) => value, orElse: () => StartOfWeek.monday);
+    final controller = ref.read(settingsControllerProvider);
 
     return AppScaffold(
       title: 'Settings',
@@ -25,64 +39,34 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: 'Control local app behavior stored on this device.',
           ),
           const SizedBox(height: 16),
-          _NotificationSwitchTile(
-            enabled: remindersEnabled.maybeWhen(
-              data: (enabled) => enabled,
-              orElse: () => true,
-            ),
-            loading: remindersEnabled.isLoading,
-            onChanged: (enabled) =>
-                _setReminderPreference(ref: ref, enabled: enabled),
+          _ThemeModeTile(value: themeMode, onChanged: controller.setThemeMode),
+          const SizedBox(height: 12),
+          _ReminderSettingsTile(
+            settings: reminderSettings,
+            onEnabledChanged: controller.setRemindersEnabled,
+            onPreparationChanged: controller.setPreparationReminderMinutes,
+            onLateChanged: controller.setLateReminderMinutes,
           ),
           const SizedBox(height: 12),
-          const _SettingsTile(
-            icon: Icons.notifications_outlined,
-            title: 'Reminder types',
-            subtitle: 'Preparation, start, late, and recovery reminders.',
+          _StartOfWeekTile(
+            value: startOfWeek,
+            onChanged: controller.setStartOfWeek,
           ),
           const SizedBox(height: 12),
-          const _SettingsTile(
-            icon: Icons.dark_mode_outlined,
-            title: 'Theme mode',
-            subtitle: 'The app currently follows the system theme.',
-          ),
-          const SizedBox(height: 12),
-          _SettingsTile(
-            icon: Icons.delete_outline,
-            title: 'Data controls',
-            subtitle: 'Clear local routines, logs, focus sessions, and scores.',
-            destructive: true,
-            onTap: () => _confirmClearData(context, ref),
-          ),
+          _ClearDataTile(onConfirmed: () => _clearData(context, ref)),
         ],
       ),
     );
   }
 
-  Future<void> _setReminderPreference({
-    required WidgetRef ref,
-    required bool enabled,
-  }) async {
-    await ref
-        .read(notificationSettingsStoreProvider)
-        .setRemindersEnabled(enabled);
-
-    final scheduler = ref.read(notificationSchedulerProvider);
-    if (enabled) {
-      await scheduler.initializeAndReschedule();
-    } else {
-      await scheduler.cancelAllRoutineReminders();
-    }
-  }
-
-  Future<void> _confirmClearData(BuildContext context, WidgetRef ref) async {
+  Future<void> _clearData(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Clear local data?'),
           content: const Text(
-            'This removes all routines, logs, focus sessions, reminders, and scores stored on this device. Default categories stay available.',
+            'This removes routines, schedules, logs, focus sessions, reminders, and daily scores from this device. App settings stay unchanged.',
           ),
           actions: [
             TextButton(
@@ -102,9 +86,10 @@ class SettingsScreen extends ConsumerWidget {
 
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(notificationSchedulerProvider).cancelAllRoutineReminders();
-      await ref.read(appDatabaseProvider).clearUserData();
-      ref.invalidate(remindersEnabledProvider);
+      await ref.read(settingsControllerProvider).clearAllData();
+      ref.invalidate(themeModeProvider);
+      ref.invalidate(reminderSettingsProvider);
+      ref.invalidate(startOfWeekProvider);
       messenger.showSnackBar(
         const SnackBar(content: Text('Local RoutineOS data cleared.')),
       );
@@ -116,72 +101,284 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class _NotificationSwitchTile extends StatelessWidget {
-  const _NotificationSwitchTile({
-    required this.enabled,
-    required this.loading,
-    required this.onChanged,
-  });
+class _ThemeModeTile extends StatelessWidget {
+  const _ThemeModeTile({required this.value, required this.onChanged});
 
-  final bool enabled;
-  final bool loading;
-  final ValueChanged<bool> onChanged;
+  final ThemeMode value;
+  final ValueChanged<ThemeMode> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Card(
-      child: SwitchListTile(
-        secondary: Icon(
-          enabled ? Icons.notifications_active : Icons.notifications_off,
-          color: colorScheme.primary,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _TileHeader(
+              icon: Icons.dark_mode_outlined,
+              title: 'Theme mode',
+              subtitle: 'Choose how RoutineOS should appear.',
+            ),
+            const SizedBox(height: 12),
+            SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  icon: Icon(Icons.settings_suggest_outlined),
+                  label: Text('System'),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  icon: Icon(Icons.light_mode_outlined),
+                  label: Text('Light'),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  icon: Icon(Icons.dark_mode_outlined),
+                  label: Text('Dark'),
+                ),
+              ],
+              selected: {value},
+              onSelectionChanged: (selection) => onChanged(selection.single),
+            ),
+          ],
         ),
-        title: Text('Routine reminders', style: theme.textTheme.titleMedium),
-        subtitle: Text(
-          loading
-              ? 'Loading reminder preference...'
-              : enabled
-              ? 'Local reminders are enabled for routines that allow them.'
-              : 'All local routine reminders are paused.',
-        ),
-        value: enabled,
-        onChanged: loading ? null : onChanged,
       ),
     );
   }
 }
 
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
+class _ReminderSettingsTile extends StatelessWidget {
+  const _ReminderSettingsTile({
+    required this.settings,
+    required this.onEnabledChanged,
+    required this.onPreparationChanged,
+    required this.onLateChanged,
+  });
+
+  final ReminderSettings settings;
+  final ValueChanged<bool> onEnabledChanged;
+  final ValueChanged<int> onPreparationChanged;
+  final ValueChanged<int> onLateChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: Icon(
+                settings.remindersEnabled
+                    ? Icons.notifications_active_outlined
+                    : Icons.notifications_off_outlined,
+              ),
+              title: const Text('Routine reminders'),
+              subtitle: Text(
+                settings.remindersEnabled
+                    ? 'Local reminders are enabled.'
+                    : 'All local routine reminders are paused.',
+              ),
+              value: settings.remindersEnabled,
+              onChanged: onEnabledChanged,
+            ),
+            const Divider(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: _MinutesInput(
+                    label: 'Preparation',
+                    value: settings.defaultPreparationReminderMinutes,
+                    onSubmitted: onPreparationChanged,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MinutesInput(
+                    label: 'Late',
+                    value: settings.defaultLateReminderMinutes,
+                    onSubmitted: onLateChanged,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MinutesInput extends StatefulWidget {
+  const _MinutesInput({
+    required this.label,
+    required this.value,
+    required this.onSubmitted,
+  });
+
+  final String label;
+  final int value;
+  final ValueChanged<int> onSubmitted;
+
+  @override
+  State<_MinutesInput> createState() => _MinutesInputState();
+}
+
+class _MinutesInputState extends State<_MinutesInput> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value.toString());
+    _focusNode = FocusNode()..addListener(_saveOnBlur);
+  }
+
+  @override
+  void didUpdateWidget(covariant _MinutesInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value != oldWidget.value && !_focusNode.hasFocus) {
+      _controller.text = widget.value.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_saveOnBlur);
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _controller,
+      focusNode: _focusNode,
+      decoration: InputDecoration(
+        labelText: '${widget.label} minutes',
+        suffixText: 'min',
+        border: const OutlineInputBorder(),
+      ),
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      onFieldSubmitted: (_) => _submit(),
+      onTapOutside: (_) => FocusScope.of(context).unfocus(),
+    );
+  }
+
+  void _saveOnBlur() {
+    if (!_focusNode.hasFocus) _submit();
+  }
+
+  void _submit() {
+    final minutes = int.tryParse(_controller.text);
+    if (minutes == null) return;
+    widget.onSubmitted(minutes);
+  }
+}
+
+class _StartOfWeekTile extends StatelessWidget {
+  const _StartOfWeekTile({required this.value, required this.onChanged});
+
+  final StartOfWeek value;
+  final ValueChanged<StartOfWeek> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _TileHeader(
+              icon: Icons.calendar_month_outlined,
+              title: 'Start of week',
+              subtitle: 'Used by calendar views.',
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<StartOfWeek>(
+              initialValue: value,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Week starts on',
+              ),
+              items: [
+                for (final option in StartOfWeek.values)
+                  DropdownMenuItem(value: option, child: Text(option.label)),
+              ],
+              onChanged: (option) {
+                if (option != null) onChanged(option);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClearDataTile extends StatelessWidget {
+  const _ClearDataTile({required this.onConfirmed});
+
+  final VoidCallback onConfirmed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      child: ListTile(
+        leading: Icon(Icons.delete_outline, color: colorScheme.error),
+        title: const Text('Clear all local data'),
+        subtitle: const Text(
+          'Remove routines, logs, focus sessions, reminders, and scores.',
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onConfirmed,
+      ),
+    );
+  }
+}
+
+class _TileHeader extends StatelessWidget {
+  const _TileHeader({
     required this.icon,
     required this.title,
     required this.subtitle,
-    this.onTap,
-    this.destructive = false,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback? onTap;
-  final bool destructive;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final color = destructive ? colorScheme.error : colorScheme.primary;
 
-    return Card(
-      child: ListTile(
-        onTap: onTap,
-        leading: Icon(icon, color: color),
-        title: Text(title, style: theme.textTheme.titleMedium),
-        subtitle: Text(subtitle),
-        trailing: onTap == null ? null : const Icon(Icons.chevron_right),
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: colorScheme.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: theme.textTheme.titleMedium),
+              const SizedBox(height: 2),
+              Text(subtitle),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -31,7 +31,7 @@ class LocalRoutineNotificationScheduler
   final NotificationGateway _notifications;
   final NotificationSettingsStore? _settings;
 
-  static const reminderRules = [
+  static const _fallbackReminderRules = [
     RoutineReminderRule(
       type: RoutineReminderType.preparation,
       minutesOffset: -10,
@@ -81,6 +81,8 @@ class LocalRoutineNotificationScheduler
     if (!enabled) return;
 
     final now = DateTime.now();
+    final reminderRules = await _reminderRules();
+
     await _database.batch((batch) {
       batch.insertAllOnConflictUpdate(
         _database.reminders,
@@ -124,7 +126,7 @@ class LocalRoutineNotificationScheduler
   @override
   Future<void> cancelRoutineReminders(String routineId) async {
     for (final weekday in DateTimeUtils.weekdayShortLabels.keys) {
-      for (final rule in reminderRules) {
+      for (final rule in _fallbackReminderRules) {
         await _notifications.cancel(
           notificationIdFor(
             routineId: routineId,
@@ -151,6 +153,30 @@ class LocalRoutineNotificationScheduler
 
   Future<bool> _remindersEnabled() {
     return _settings?.remindersEnabled() ?? Future.value(true);
+  }
+
+  Future<List<RoutineReminderRule>> _reminderRules() async {
+    final settings = await _settings?.reminderSettings();
+    if (settings == null) return _fallbackReminderRules;
+
+    return [
+      RoutineReminderRule(
+        type: RoutineReminderType.preparation,
+        minutesOffset: -settings.defaultPreparationReminderMinutes,
+      ),
+      const RoutineReminderRule(
+        type: RoutineReminderType.start,
+        minutesOffset: 0,
+      ),
+      RoutineReminderRule(
+        type: RoutineReminderType.late,
+        minutesOffset: settings.defaultLateReminderMinutes,
+      ),
+      const RoutineReminderRule(
+        type: RoutineReminderType.recovery,
+        minutesOffset: -15,
+      ),
+    ];
   }
 
   Future<void> _deleteReminderRows(String routineId) {

@@ -60,6 +60,37 @@ void main() {
     );
   });
 
+  test('uses stored preparation and late reminder defaults', () async {
+    settings.preparationMinutes = 20;
+    settings.lateMinutes = 7;
+    await _insertRoutine(database, routineId: 'routine-custom');
+
+    await scheduler.scheduleRoutineReminders(
+      const RoutineReminderSchedule(
+        routineId: 'routine-custom',
+        title: 'Read Bangla',
+        routineType: 'fixedTime',
+        targetSummary: '20 pages',
+        startTimeMinutes: 1320,
+        endTimeMinutes: 1380,
+        repeatDays: {1},
+        fullDurationMinutes: 60,
+        miniDurationMinutes: 10,
+        isActive: true,
+        reminderEnabled: true,
+      ),
+    );
+
+    final reminders = await database.select(database.reminders).get();
+    final offsetsByType = {
+      for (final reminder in reminders)
+        reminder.reminderType: reminder.minutesOffset,
+    };
+
+    expect(offsetsByType['preparation'], -20);
+    expect(offsetsByType['late'], 7);
+  });
+
   test('flexible routine schedules no reminders', () async {
     await scheduler.scheduleRoutineReminders(
       const RoutineReminderSchedule(
@@ -270,6 +301,8 @@ class _NotificationCall {
 
 class _FakeNotificationSettingsStore implements NotificationSettingsStore {
   bool enabled = true;
+  int preparationMinutes = 10;
+  int lateMinutes = 10;
 
   @override
   Future<bool> remindersEnabled() async => enabled;
@@ -282,5 +315,26 @@ class _FakeNotificationSettingsStore implements NotificationSettingsStore {
   @override
   Stream<bool> watchRemindersEnabled() async* {
     yield enabled;
+  }
+
+  @override
+  Future<ReminderSettings> reminderSettings() async {
+    return ReminderSettings(
+      remindersEnabled: enabled,
+      defaultPreparationReminderMinutes: preparationMinutes,
+      defaultLateReminderMinutes: lateMinutes,
+    );
+  }
+
+  @override
+  Future<void> setReminderSettings(ReminderSettings settings) async {
+    enabled = settings.remindersEnabled;
+    preparationMinutes = settings.defaultPreparationReminderMinutes;
+    lateMinutes = settings.defaultLateReminderMinutes;
+  }
+
+  @override
+  Stream<ReminderSettings> watchReminderSettings() async* {
+    yield await reminderSettings();
   }
 }

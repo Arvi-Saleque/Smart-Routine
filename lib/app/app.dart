@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/notifications/notification_providers.dart';
+import '../features/settings/application/settings_providers.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -28,13 +29,17 @@ class _RoutineOSAppState extends ConsumerState<RoutineOSApp> {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref
+        .watch(themeModeProvider)
+        .maybeWhen(data: (mode) => mode, orElse: () => ThemeMode.system);
+
     return MaterialApp.router(
       title: 'RoutineOS',
       debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
     );
   }
 }

@@ -184,6 +184,9 @@
 - Today timeline correctness tests: passed.
 - Daily score side-effect tests: passed.
 - Calendar score preview tests: passed.
+- Settings persistence tests: passed.
+- Theme mode provider test: passed.
+- Settings clear-data test: passed.
 
 ## Known Issues
 
@@ -203,6 +206,20 @@
 - Calendar selected-day preview now calls the Today timeline in read-only score mode with `saveScore: false`.
 - Future date previews still show planned routines as upcoming, without marking them missed and without writing `daily_scores`.
 - Added regression tests for recovery scoring, empty score state, future preview score writes, and calendar read-only preview behavior.
+- Ran `dart format lib test`.
+- Ran `flutter analyze`: passed with no issues.
+- Ran `flutter test`: passed.
+
+## Latest Update: Settings Screen Completion
+
+- Implemented `SettingsRepository` with SharedPreferences-backed theme, reminder, and start-of-week settings.
+- Added `themeModeProvider`, `reminderSettingsProvider`, and `startOfWeekProvider`.
+- Connected `MaterialApp.router` to the saved theme mode setting.
+- Replaced the placeholder Settings screen with theme mode, reminder toggle, preparation/late reminder minute inputs, start-of-week selection, and clear-data confirmation.
+- Updated notification settings and scheduling so preparation/late reminder defaults are stored and used by local notification scheduling.
+- Connected start-of-week preference to the calendar view.
+- Clear all data now cancels local routine notifications, clears user database rows, re-seeds default categories, and preserves SharedPreferences app settings.
+- Added tests for SharedPreferences persistence, theme provider behavior, clear-data safety, and custom notification reminder offsets.
 - Ran `dart format lib test`.
 - Ran `flutter analyze`: passed with no issues.
 - Ran `flutter test`: passed.

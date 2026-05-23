@@ -10,6 +10,8 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/routine_card.dart';
 import '../../../shared/widgets/score_card.dart';
 import '../../../shared/widgets/section_header.dart';
+import '../../settings/application/settings_providers.dart';
+import '../../settings/data/settings_repository.dart';
 import '../../today/application/today_providers.dart';
 import '../../today/data/today_repository.dart';
 import '../application/calendar_providers.dart';
@@ -51,6 +53,9 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
   Widget build(BuildContext context) {
     final focusedDay = _focusedDay;
     final selectedDay = _selectedDay;
+    final startOfWeek = ref
+        .watch(startOfWeekProvider)
+        .maybeWhen(data: (value) => value, orElse: () => StartOfWeek.monday);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -66,6 +71,7 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
             return _CalendarPanel(
               focusedDay: focusedDay,
               selectedDay: selectedDay,
+              startOfWeek: startOfWeek,
               summary: snapshot.data,
               loading: snapshot.connectionState == ConnectionState.waiting,
               onDaySelected: _selectDay,
@@ -129,6 +135,7 @@ class _CalendarPanel extends StatelessWidget {
   const _CalendarPanel({
     required this.focusedDay,
     required this.selectedDay,
+    required this.startOfWeek,
     required this.summary,
     required this.loading,
     required this.onDaySelected,
@@ -137,6 +144,7 @@ class _CalendarPanel extends StatelessWidget {
 
   final DateTime focusedDay;
   final DateTime selectedDay;
+  final StartOfWeek startOfWeek;
   final CalendarMonthSummary? summary;
   final bool loading;
   final void Function(DateTime selectedDay, DateTime focusedDay) onDaySelected;
@@ -155,6 +163,9 @@ class _CalendarPanel extends StatelessWidget {
               firstDay: DateTime.utc(2020),
               lastDay: DateTime.utc(2035, 12, 31),
               focusedDay: focusedDay,
+              startingDayOfWeek: startOfWeek == StartOfWeek.sunday
+                  ? StartingDayOfWeek.sunday
+                  : StartingDayOfWeek.monday,
               selectedDayPredicate: (day) => isSameDay(day, selectedDay),
               availableCalendarFormats: const {CalendarFormat.month: 'Month'},
               calendarFormat: CalendarFormat.month,
