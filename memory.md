@@ -5,6 +5,7 @@
 - Repository contains an Android-first Flutter project for RoutineOS.
 - `plan.md` defines the detailed implementation plan.
 - The MVP target is an offline-first Android Flutter app using Riverpod, go_router, Drift SQLite, local notifications, fl_chart, and table_calendar.
+- Phase 2 Drift database foundation is implemented.
 
 ## Completed
 
@@ -23,6 +24,12 @@
 - Added `AGENTS.md` and `SETUP_NOTES.md`.
 - Enabled Android core library desugaring for `flutter_local_notifications`.
 - Configured Kotlin compilation in-process to avoid Windows incremental-cache noise.
+- Implemented Drift table definitions for categories, routines, routine schedules, routine logs, focus sessions, reminders, and daily scores.
+- Added `AppDatabase` with schema version 1, local SQLite file opening, foreign key enabling, and migration setup.
+- Added idempotent default category seeding for the 10 MVP categories.
+- Added `appDatabaseProvider` for Riverpod-managed database lifecycle.
+- Generated Drift code in `lib/core/database/app_database.g.dart`.
+- Added a database test that confirms default categories are seeded once.
 
 ## Commands Run
 
@@ -33,17 +40,23 @@
 - `flutter analyze`
 - `flutter test`
 - `flutter clean; flutter pub get; flutter build apk --debug`
+- `flutter pub run build_runner build --delete-conflicting-outputs`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
 
 ## Verification
 
 - `flutter analyze`: passed with no issues.
 - `flutter test`: passed.
 - `flutter build apk --debug`: passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
+- Database seed test: passed.
 
 ## Known Issues
 
 - Package resolver reports newer incompatible package versions are available. This is informational and does not block the build.
-- Full database, notifications, analytics, focus timer, and Smart Coach logic are intentionally not implemented yet.
+- `build_runner` reports that `--delete-conflicting-outputs` was ignored because the installed version no longer uses that option.
+- Routine CRUD, local reminder scheduling, analytics logic, focus timer behavior, and Smart Coach rules are intentionally not implemented yet.
 
 ## Important Rules
 
@@ -55,11 +68,10 @@
 
 ## Next Recommended Step
 
-Begin Phase 2: Drift database foundation.
+Begin Phase 3: Routine CRUD.
 
-- Add Drift table definitions for categories, routines, schedules, logs, focus sessions, reminders, and daily scores.
-- Create `AppDatabase`.
-- Add database provider.
-- Add default category seed logic.
-- Run code generation.
-- Run `flutter analyze`, `flutter test`, and an Android debug build.
+- Connect `RoutineRepository` to `AppDatabase`.
+- Implement create, read, update, deactivate/delete, and schedule persistence.
+- Build the routine form fields and validation.
+- Load real routines in routine list and detail screens.
+- Keep Today timeline behavior for the next phase unless a small shared model is needed.
