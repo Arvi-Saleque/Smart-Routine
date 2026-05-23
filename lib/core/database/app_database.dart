@@ -133,6 +133,18 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  Future<void> clearUserData() async {
+    await transaction(() async {
+      await delete(reminders).go();
+      await delete(focusSessions).go();
+      await delete(routineLogs).go();
+      await delete(dailyScores).go();
+      await delete(routineSchedules).go();
+      await delete(routines).go();
+      await seedDefaultCategories();
+    });
+  }
+
   static CategoriesCompanion _category({
     required String id,
     required String name,

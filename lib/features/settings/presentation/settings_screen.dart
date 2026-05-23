@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/database/app_database_provider.dart';
 import '../../../core/notifications/notification_providers.dart';
 import '../../../shared/widgets/app_scaffold.dart';
 import '../../../shared/widgets/section_header.dart';
@@ -46,11 +47,12 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: 'The app currently follows the system theme.',
           ),
           const SizedBox(height: 12),
-          const _SettingsTile(
+          _SettingsTile(
             icon: Icons.delete_outline,
             title: 'Data controls',
-            subtitle:
-                'Clear data actions will be added after local storage exists.',
+            subtitle: 'Clear local routines, logs, focus sessions, and scores.',
+            destructive: true,
+            onTap: () => _confirmClearData(context, ref),
           ),
         ],
       ),
@@ -70,6 +72,46 @@ class SettingsScreen extends ConsumerWidget {
       await scheduler.initializeAndReschedule();
     } else {
       await scheduler.cancelAllRoutineReminders();
+    }
+  }
+
+  Future<void> _confirmClearData(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Clear local data?'),
+          content: const Text(
+            'This removes all routines, logs, focus sessions, reminders, and scores stored on this device. Default categories stay available.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Clear data'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(notificationSchedulerProvider).cancelAllRoutineReminders();
+      await ref.read(appDatabaseProvider).clearUserData();
+      ref.invalidate(remindersEnabledProvider);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Local RoutineOS data cleared.')),
+      );
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not clear local data: $error')),
+      );
     }
   }
 }
@@ -116,22 +158,29 @@ class _SettingsTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
+    this.destructive = false,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
+  final bool destructive;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final color = destructive ? colorScheme.error : colorScheme.primary;
 
     return Card(
       child: ListTile(
-        leading: Icon(icon, color: colorScheme.primary),
+        onTap: onTap,
+        leading: Icon(icon, color: color),
         title: Text(title, style: theme.textTheme.titleMedium),
         subtitle: Text(subtitle),
+        trailing: onTap == null ? null : const Icon(Icons.chevron_right),
       ),
     );
   }

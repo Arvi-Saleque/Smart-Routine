@@ -15,6 +15,7 @@
 - Phase 9 Calendar is implemented.
 - Phase 10 Analytics is implemented.
 - Phase 11 Smart Coach is implemented.
+- Phase 12 Polish and Release Prep is implemented.
 
 ## Completed
 
@@ -91,6 +92,10 @@
 - Added `SmartCoachRepository` to build coaching context from local routines, schedules, logs, and categories.
 - Replaced the Smart Coach placeholder with real rule-based insight cards and empty/error/loading states.
 - Added Smart Coach engine and repository tests covering generated insights and empty-data behavior.
+- Added a confirmed Settings action to clear local routines, logs, focus sessions, reminders, and scores while preserving default categories.
+- Added `AppDatabase.clearUserData()` as the single local reset path.
+- Expanded Android setup notes with manual APK testing steps and exact alarm permission guidance.
+- Added a database reset test covering user-data clearing and category preservation.
 
 ## Commands Run
 
@@ -102,6 +107,10 @@
 - `flutter test`
 - `flutter clean; flutter pub get; flutter build apk --debug`
 - `flutter pub run build_runner build --delete-conflicting-outputs`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
+- `dart format lib test`
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
@@ -157,6 +166,7 @@
 - Calendar repository tests: passed.
 - Analytics repository tests: passed.
 - Smart Coach tests: passed.
+- Local data reset test: passed.
 
 ## Known Issues
 
@@ -177,10 +187,8 @@
 
 ## Next Recommended Step
 
-Begin Phase 12: Polish and Release Prep.
+Manual APK testing and follow-up polish.
 
-- Improve responsiveness.
-- Add loading/error states where still thin.
-- Add confirmation dialogs for destructive actions.
-- Review Android notification permission setup notes.
-- Run full analysis, tests, and debug APK build.
+- Install `build/app/outputs/flutter-apk/app-debug.apk` on an Android device.
+- Grant notification permission and exact alarm permission when required by the device.
+- Create routines, complete/skip/recover/focus them, and review Today, Calendar, Analytics, Smart Coach, and Settings reset behavior.

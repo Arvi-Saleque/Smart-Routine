@@ -9,6 +9,8 @@
 - Kotlin compilation is configured to run in-process to avoid Windows incremental-cache noise when dependencies live outside the project drive.
 - Routine reminders now request notification permission at runtime and declare Android notification/exact alarm permissions in the manifest.
 - MVP reminder timezone defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
+- For manual Android testing, install the debug APK, grant notification permission on first launch, and verify the Settings reminder toggle can pause and restore scheduled routine reminders.
+- Some Android versions require users to allow exact alarms in system settings before precise reminders fire at the requested minute.
 
 ## Drift
 
@@ -25,3 +27,10 @@ flutter pub run build_runner build --delete-conflicting-outputs
 - Supabase is intentionally not included in the MVP.
 - Paid AI APIs are intentionally not included in the MVP.
 - Core routine data should live in local SQLite through Drift.
+
+## Manual APK Test Checklist
+
+- Create a fixed-time routine with reminders enabled.
+- Confirm it appears on Today, Calendar, Analytics, and Smart Coach after local activity exists.
+- Complete, skip, recover, and focus a routine to verify local logs, scores, charts, and insights update.
+- Use Settings to clear local data and confirm default categories remain.
