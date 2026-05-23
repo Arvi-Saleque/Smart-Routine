@@ -13,6 +13,7 @@
 - Phase 7 Recovery System is implemented.
 - Phase 8 Daily Score is implemented.
 - Phase 9 Calendar is implemented.
+- Phase 10 Analytics is implemented.
 
 ## Completed
 
@@ -80,6 +81,11 @@
 - Added selected-day details on the Calendar screen with score, status totals, and read-only routine cards.
 - Updated selected past days to show unlogged planned routines as missed.
 - Added a Calendar repository test covering month markers and selected date score activity.
+- Replaced the Analytics placeholder with real local-data charts using `fl_chart`.
+- Added analytics summary queries for daily scores, completion rate, category completion, focus minutes, most skipped routine, and recovery rate.
+- Added summary stat tiles for average score, completed routines, total focus minutes, recovery rate, and most skipped routine.
+- Added analytics empty states for missing score, completion, focus, and category data.
+- Added an Analytics repository test covering scores, completion, categories, focus, skips, and recovery.
 
 ## Commands Run
 
@@ -91,6 +97,10 @@
 - `flutter test`
 - `flutter clean; flutter pub get; flutter build apk --debug`
 - `flutter pub run build_runner build --delete-conflicting-outputs`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
+- `dart format lib test`
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
@@ -136,12 +146,13 @@
 - Recovery system tests: passed.
 - Daily score tests: passed.
 - Calendar repository tests: passed.
+- Analytics repository tests: passed.
 
 ## Known Issues
 
 - Package resolver reports newer incompatible package versions are available. This is informational and does not block the build.
 - `build_runner` reports that `--delete-conflicting-outputs` was ignored because the installed version no longer uses that option.
-- Analytics logic and Smart Coach rules are intentionally not implemented yet.
+- Smart Coach rules are intentionally not implemented yet.
 - Reminder timezone currently defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
 - Move-to-tomorrow recovery is stored as a rescheduled log note for now; a richer future version can create one-off tomorrow schedule instances.
 - Today still shows a simple progress card alongside the formal daily score card.
@@ -157,11 +168,8 @@
 
 ## Next Recommended Step
 
-Begin Phase 10: Analytics.
+Begin Phase 11: Smart Coach.
 
-- Add analytics repository queries.
-- Add daily score chart.
-- Add weekly completion chart.
-- Add category completion chart.
-- Add focus minutes chart.
-- Show most skipped routine and recovery rate.
+- Implement `SmartCoachEngine`.
+- Add overplanning, bad time, weak category, recovery, and good streak rules.
+- Show local rule-based insight cards.
