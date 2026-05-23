@@ -42,34 +42,31 @@ class TodayRepository {
       ),
     ])..where(_database.routines.isActive.equals(true))).get();
 
-    final scheduled =
-        routineRows
-            .map(
-              (row) => RoutineDetail(
-                routine: row.readTable(_database.routines),
-                category: row.readTable(_database.categories),
-                schedule: row.readTable(_database.routineSchedules),
-              ),
-            )
-            .where((detail) {
-              final schedule = detail.schedule;
-              if (schedule == null) {
-                return false;
-              }
-              if (schedule.specificDate != null) {
-                return schedule.specificDate == dateKey;
-              }
-              return RecurrenceUtils.repeatsOnWeekday(
-                schedule.repeatDays,
-                date.weekday,
-              );
-            })
-            .toList()
-          ..sort(
-            (left, right) => left.schedule!.startTimeMinutes.compareTo(
-              right.schedule!.startTimeMinutes,
-            ),
-          );
+    final scheduledByRoutineId = <String, RoutineDetail>{};
+    for (final row in routineRows) {
+      final detail = RoutineDetail(
+        routine: row.readTable(_database.routines),
+        category: row.readTable(_database.categories),
+        schedule: row.readTable(_database.routineSchedules),
+      );
+      final schedule = detail.schedule!;
+      final isScheduled = schedule.specificDate == null
+          ? RecurrenceUtils.repeatsOnWeekday(schedule.repeatDays, date.weekday)
+          : schedule.specificDate == dateKey;
+      if (!isScheduled) continue;
+
+      final existing = scheduledByRoutineId[detail.routine.id];
+      if (existing == null || schedule.specificDate != null) {
+        scheduledByRoutineId[detail.routine.id] = detail;
+      }
+    }
+
+    final scheduled = scheduledByRoutineId.values.toList()
+      ..sort(
+        (left, right) => left.schedule!.startTimeMinutes.compareTo(
+          right.schedule!.startTimeMinutes,
+        ),
+      );
 
     final logs = await (_database.select(
       _database.routineLogs,
@@ -84,8 +81,8 @@ class TodayRepository {
         isToday: isToday,
         isPast: isPast,
         currentMinutes: currentMinutes,
-        startMinutes: schedule.startTimeMinutes,
-        endMinutes: schedule.endTimeMinutes,
+        startMinutes: log?.plannedStartTimeMinutes ?? schedule.startTimeMinutes,
+        endMinutes: log?.plannedEndTimeMinutes ?? schedule.endTimeMinutes,
       );
 
       return TodayTimelineEntry(
@@ -112,7 +109,9 @@ class TodayRepository {
     await _upsertLog(
       entry: entry,
       status: RoutineStatus.completed,
-      actualStartAt: now,
+      // Manual completion has no observed start event. Keep actualStartAt
+      // null and store the planned duration instead of inventing an
+      // impossible start/end pair at the same instant.
       actualEndAt: now,
       actualDurationMinutes: plannedDuration,
       updatedAt: now,
@@ -155,13 +154,36 @@ class TodayRepository {
 
   Future<void> moveToTomorrow(TodayTimelineEntry entry) async {
     final now = DateTime.now();
-    final tomorrow = DateTimeUtils.dateKey(now.add(const Duration(days: 1)));
-    await _upsertLog(
-      entry: entry,
-      status: RoutineStatus.rescheduled,
-      note: 'Moved to $tomorrow.',
-      updatedAt: now,
+    final schedule = entry.detail.schedule!;
+    final entryDate = DateTime.parse(entry.dateKey);
+    final tomorrow = DateTimeUtils.dateKey(
+      entryDate.add(const Duration(days: 1)),
     );
+
+    await _database.transaction(() async {
+      await _database
+          .into(_database.routineSchedules)
+          .insertOnConflictUpdate(
+            RoutineSchedulesCompanion.insert(
+              id: _tomorrowScheduleId(entry.detail.routine.id, tomorrow),
+              routineId: entry.detail.routine.id,
+              startTimeMinutes: schedule.startTimeMinutes,
+              endTimeMinutes: schedule.endTimeMinutes,
+              repeatDays: '',
+              specificDate: Value(tomorrow),
+              timezone: schedule.timezone,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+
+      await _upsertLog(
+        entry: entry,
+        status: RoutineStatus.rescheduled,
+        note: 'Moved to $tomorrow',
+        updatedAt: now,
+      );
+    });
   }
 
   Future<void> _upsertLog({
@@ -177,7 +199,16 @@ class TodayRepository {
     String? note,
   }) async {
     final schedule = entry.detail.schedule!;
-    final existingLog = entry.log;
+    final existingLog =
+        entry.log ??
+        await (_database.select(_database.routineLogs)
+              ..where(
+                (table) =>
+                    table.routineId.equals(entry.detail.routine.id) &
+                    table.date.equals(entry.dateKey),
+              )
+              ..limit(1))
+            .getSingleOrNull();
     final plannedStart =
         plannedStartTimeMinutes ??
         existingLog?.plannedStartTimeMinutes ??
@@ -243,7 +274,18 @@ class TodayRepository {
     required int endMinutes,
   }) {
     if (log != null) {
-      return RoutineStatus.values.byName(log.status);
+      final status = RoutineStatus.values.byName(log.status);
+      if (status == RoutineStatus.rescheduled) {
+        if (isToday &&
+            currentMinutes >= startMinutes &&
+            currentMinutes <= endMinutes) {
+          return RoutineStatus.active;
+        }
+        if (isPast || (isToday && currentMinutes > endMinutes)) {
+          return RoutineStatus.missed;
+        }
+      }
+      return status;
     }
     if (isPast) return RoutineStatus.missed;
     if (!isToday) return RoutineStatus.upcoming;
@@ -252,6 +294,10 @@ class TodayRepository {
     }
     if (currentMinutes > endMinutes) return RoutineStatus.missed;
     return RoutineStatus.upcoming;
+  }
+
+  String _tomorrowScheduleId(String routineId, String dateKey) {
+    return 'reschedule-$routineId-$dateKey';
   }
 }
 
@@ -343,6 +389,7 @@ class TodayTimelineEntry {
     final log = this.log;
     if (log != null &&
         (status == RoutineStatus.rescheduled ||
+            log.status == RoutineStatus.rescheduled.name ||
             status == RoutineStatus.recovered)) {
       return DateTimeUtils.formatTimeRange(
         log.plannedStartTimeMinutes,

@@ -100,6 +100,8 @@
 - Switched routine reminders from exact scheduling to `AndroidScheduleMode.inexactAllowWhileIdle`.
 - Hardened notification permission handling so denied Android notification permission returns cleanly without scheduling or crashing.
 - Expanded notification scheduler tests for flexible routine no-op behavior, global disable behavior, cancellation, and rescheduling order.
+- Fixed Today timeline correctness: manual completion no longer stores impossible equal start/end timestamps, rescheduled logs resolve to active/missed from their updated planned window, Tomorrow creates a real one-time `specificDate` schedule, and stale entries update existing logs instead of creating duplicates.
+- Added Today repository tests for manual completion timing, rescheduled active/missed behavior, move-to-tomorrow schedules, tomorrow timeline inclusion, and duplicate-log prevention.
 
 ## Commands Run
 
@@ -113,6 +115,9 @@
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
+- `dart format lib/features/today test/features/today`
+- `flutter analyze`
+- `flutter test`
 - `flutter clean; flutter pub get; flutter build apk --debug`
 - `flutter pub run build_runner build --delete-conflicting-outputs`
 - `flutter analyze`
@@ -176,6 +181,7 @@
 - Smart Coach tests: passed.
 - Local data reset test: passed.
 - Android local notification scheduler tests: passed.
+- Today timeline correctness tests: passed.
 
 ## Known Issues
 
