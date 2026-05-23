@@ -7,6 +7,8 @@
 - The first architecture milestone only adds notification dependencies. Reminder initialization and permissions will be implemented in the local reminders phase.
 - `flutter_local_notifications` requires Android core library desugaring, which is enabled in `android/app/build.gradle.kts`.
 - Kotlin compilation is configured to run in-process to avoid Windows incremental-cache noise when dependencies live outside the project drive.
+- Routine reminders now request notification permission at runtime and declare Android notification/exact alarm permissions in the manifest.
+- MVP reminder timezone defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
 
 ## Drift
 

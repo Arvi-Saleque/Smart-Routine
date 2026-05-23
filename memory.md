@@ -9,6 +9,7 @@
 - Phase 3 Routine CRUD is implemented.
 - Phase 4 Today Timeline is implemented.
 - Phase 5 Focus Session is implemented.
+- Phase 6 Local Reminders is implemented.
 
 ## Completed
 
@@ -52,6 +53,15 @@
 - Implemented `FocusRepository` save flow that writes `focus_sessions` and updates or creates completed `routine_logs`.
 - Added focus session Riverpod providers and controller.
 - Added a Focus repository test covering saved focus sessions and completed routine logs.
+- Implemented local notification service initialization with timezone support and Android notification permission request.
+- Added a routine notification scheduler for preparation, start, late, and recovery reminders.
+- Added stable per-routine/per-weekday notification IDs and reminder metadata persistence in the `reminders` table.
+- Wired routine create, update, pause/activate, and delete flows to schedule, reschedule, or cancel reminders.
+- Initialized and rescheduled reminders on app startup.
+- Added Android notification and exact alarm permissions.
+- Added a shared_preferences-backed global routine reminders toggle on the Settings screen.
+- Added scheduler tests for fixed-time reminder scheduling, non-schedulable routine cancellation, and global reminder disable behavior.
+- Extended routine repository tests to protect paused routines from being rescheduled by edits.
 
 ## Commands Run
 
@@ -78,6 +88,10 @@
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
 
 ## Verification
 
@@ -88,13 +102,15 @@
 - Routine repository CRUD test: passed.
 - Today repository timeline/log test: passed.
 - Focus repository save test: passed.
+- Notification scheduler tests: passed.
 
 ## Known Issues
 
 - Package resolver reports newer incompatible package versions are available. This is informational and does not block the build.
 - `build_runner` reports that `--delete-conflicting-outputs` was ignored because the installed version no longer uses that option.
-- Local reminder scheduling, analytics logic, and Smart Coach rules are intentionally not implemented yet.
+- Analytics logic and Smart Coach rules are intentionally not implemented yet.
 - Today timeline uses a simple progress percentage from completion logs. The formal daily productivity score table is still for the Daily Score phase.
+- Reminder timezone currently defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
 
 ## Important Rules
 
@@ -106,10 +122,9 @@
 
 ## Next Recommended Step
 
-Begin Phase 6: Local Reminders.
+Begin Phase 7: Recovery System.
 
-- Initialize `flutter_local_notifications` and timezone support.
-- Add notification service and scheduler.
-- Request Android notification permission where required.
-- Schedule preparation, start, late, and recovery reminders for fixed-time routines.
-- Cancel and reschedule reminders when routines change.
+- Add recovery options to missed routine cards.
+- Start mini version from missed state.
+- Reschedule missed routines for later today or tomorrow.
+- Save recovered and skipped states in logs.

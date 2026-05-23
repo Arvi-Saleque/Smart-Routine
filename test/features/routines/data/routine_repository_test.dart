@@ -5,15 +5,18 @@ import 'package:routine_os/core/enums/difficulty_level.dart';
 import 'package:routine_os/core/enums/goal_type.dart';
 import 'package:routine_os/core/enums/priority_level.dart';
 import 'package:routine_os/core/enums/routine_type.dart';
+import 'package:routine_os/core/notifications/notification_scheduler.dart';
 import 'package:routine_os/features/routines/data/routine_repository.dart';
 
 void main() {
   late AppDatabase database;
+  late _FakeRoutineNotificationScheduler scheduler;
   late RoutineRepository repository;
 
   setUp(() {
     database = AppDatabase(NativeDatabase.memory());
-    repository = RoutineRepository(database);
+    scheduler = _FakeRoutineNotificationScheduler();
+    repository = RoutineRepository(database, scheduler: scheduler);
   });
 
   tearDown(() async {
@@ -81,9 +84,55 @@ void main() {
       await repository.setRoutineActive(routineId, false);
       final paused = await repository.getRoutineDetail(routineId);
       expect(paused!.routine.isActive, isFalse);
+      expect(scheduler.cancelled, contains(routineId));
+
+      await repository.updateRoutine(
+        routineId,
+        const RoutineFormData(
+          title: 'Paused Bangla Book',
+          categoryId: 'reading',
+          routineType: RoutineType.fixedTime,
+          goalType: GoalType.quantity,
+          targetValue: 10,
+          targetUnit: 'pages',
+          priority: PriorityLevel.medium,
+          difficulty: DifficultyLevel.easy,
+          startTimeMinutes: 1260,
+          endTimeMinutes: 1320,
+          repeatDays: {1, 3, 5},
+          fullDurationMinutes: 60,
+          mediumDurationMinutes: 30,
+          miniDurationMinutes: 10,
+          reminderEnabled: true,
+          timezone: 'Asia/Dhaka',
+        ),
+      );
+      expect(scheduler.scheduled.last.isActive, isFalse);
 
       await repository.deleteRoutine(routineId);
       expect(await repository.getRoutineDetail(routineId), isNull);
     },
   );
+}
+
+class _FakeRoutineNotificationScheduler
+    implements RoutineNotificationScheduler {
+  final scheduled = <RoutineReminderSchedule>[];
+  final cancelled = <String>[];
+
+  @override
+  Future<void> cancelRoutineReminders(String routineId) async {
+    cancelled.add(routineId);
+  }
+
+  @override
+  Future<void> cancelAllRoutineReminders() async {}
+
+  @override
+  Future<void> initializeAndReschedule() async {}
+
+  @override
+  Future<void> scheduleRoutineReminders(RoutineReminderSchedule routine) async {
+    scheduled.add(routine);
+  }
 }

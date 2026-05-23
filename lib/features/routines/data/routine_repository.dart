@@ -6,14 +6,20 @@ import '../../../core/enums/difficulty_level.dart';
 import '../../../core/enums/goal_type.dart';
 import '../../../core/enums/priority_level.dart';
 import '../../../core/enums/routine_type.dart';
+import '../../../core/notifications/notification_scheduler.dart';
 import '../../../core/utils/date_time_utils.dart';
 
 class RoutineRepository {
-  RoutineRepository(this._database, {Uuid? uuid})
-    : _uuid = uuid ?? const Uuid();
+  RoutineRepository(
+    this._database, {
+    Uuid? uuid,
+    RoutineNotificationScheduler? scheduler,
+  }) : _uuid = uuid ?? const Uuid(),
+       _scheduler = scheduler;
 
   final AppDatabase _database;
   final Uuid _uuid;
+  final RoutineNotificationScheduler? _scheduler;
 
   Stream<List<Category>> watchCategories() {
     final query = _database.select(_database.categories)
@@ -133,11 +139,33 @@ class RoutineRepository {
           );
     });
 
+    await _scheduler?.scheduleRoutineReminders(
+      RoutineReminderSchedule(
+        routineId: routineId,
+        title: data.title.trim(),
+        routineType: data.routineType.name,
+        targetSummary: _targetSummary(data),
+        startTimeMinutes: data.startTimeMinutes,
+        endTimeMinutes: data.endTimeMinutes,
+        repeatDays: data.repeatDays,
+        fullDurationMinutes: data.fullDurationMinutes,
+        miniDurationMinutes: data.miniDurationMinutes,
+        isActive: true,
+        reminderEnabled: data.reminderEnabled,
+      ),
+    );
+
     return routineId;
   }
 
   Future<void> updateRoutine(String routineId, RoutineFormData data) async {
     final now = DateTime.now();
+    final existingRoutine =
+        await (_database.select(_database.routines)
+              ..where((table) => table.id.equals(routineId))
+              ..limit(1))
+            .getSingleOrNull();
+    final isActive = existingRoutine?.isActive ?? true;
 
     await _database.transaction(() async {
       await (_database.update(
@@ -176,6 +204,22 @@ class RoutineRepository {
             ),
           );
     });
+
+    await _scheduler?.scheduleRoutineReminders(
+      RoutineReminderSchedule(
+        routineId: routineId,
+        title: data.title.trim(),
+        routineType: data.routineType.name,
+        targetSummary: _targetSummary(data),
+        startTimeMinutes: data.startTimeMinutes,
+        endTimeMinutes: data.endTimeMinutes,
+        repeatDays: data.repeatDays,
+        fullDurationMinutes: data.fullDurationMinutes,
+        miniDurationMinutes: data.miniDurationMinutes,
+        isActive: isActive,
+        reminderEnabled: data.reminderEnabled,
+      ),
+    );
   }
 
   Future<void> setRoutineActive(String routineId, bool isActive) async {
@@ -187,9 +231,26 @@ class RoutineRepository {
         updatedAt: Value(DateTime.now()),
       ),
     );
+
+    if (!isActive) {
+      await _scheduler?.cancelRoutineReminders(routineId);
+      return;
+    }
+
+    final detail = await getRoutineDetail(routineId);
+    final schedule = detail?.schedule;
+    if (detail != null && schedule != null) {
+      await _scheduler?.scheduleRoutineReminders(
+        RoutineReminderSchedule.fromDatabase(
+          routine: detail.routine,
+          schedule: schedule,
+        ),
+      );
+    }
   }
 
   Future<void> deleteRoutine(String routineId) async {
+    await _scheduler?.cancelRoutineReminders(routineId);
     await _database.transaction(() async {
       await (_database.delete(
         _database.focusSessions,
@@ -227,6 +288,16 @@ class RoutineRepository {
     final trimmed = value?.trim();
     if (trimmed == null || trimmed.isEmpty) return null;
     return trimmed;
+  }
+
+  String _targetSummary(RoutineFormData data) {
+    final targetValue = data.targetValue;
+    final targetUnit = _nullableText(data.targetUnit);
+    if (targetValue == null || targetUnit == null) return data.goalType.label;
+    final formattedValue = targetValue == targetValue.roundToDouble()
+        ? targetValue.toInt().toString()
+        : targetValue.toStringAsFixed(1);
+    return '$formattedValue $targetUnit';
   }
 }
 
