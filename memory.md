@@ -8,6 +8,7 @@
 - Phase 2 Drift database foundation is implemented.
 - Phase 3 Routine CRUD is implemented.
 - Phase 4 Today Timeline is implemented.
+- Phase 5 Focus Session is implemented.
 
 ## Completed
 
@@ -46,6 +47,11 @@
 - Added skip reason selection dialog.
 - Added active routine, next routine, timeline list, and daily progress summary from local data.
 - Added a Today repository test covering scheduled routine loading, completion logs, and skip logs.
+- Connected `/focus/:routineId` to real routine data.
+- Implemented focus timer UI with start, pause, resume, finish, distraction count, notes, and recent sessions.
+- Implemented `FocusRepository` save flow that writes `focus_sessions` and updates or creates completed `routine_logs`.
+- Added focus session Riverpod providers and controller.
+- Added a Focus repository test covering saved focus sessions and completed routine logs.
 
 ## Commands Run
 
@@ -68,6 +74,10 @@
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
 
 ## Verification
 
@@ -77,12 +87,13 @@
 - Database seed test: passed.
 - Routine repository CRUD test: passed.
 - Today repository timeline/log test: passed.
+- Focus repository save test: passed.
 
 ## Known Issues
 
 - Package resolver reports newer incompatible package versions are available. This is informational and does not block the build.
 - `build_runner` reports that `--delete-conflicting-outputs` was ignored because the installed version no longer uses that option.
-- Local reminder scheduling, analytics logic, focus timer behavior, and Smart Coach rules are intentionally not implemented yet.
+- Local reminder scheduling, analytics logic, and Smart Coach rules are intentionally not implemented yet.
 - Today timeline uses a simple progress percentage from completion logs. The formal daily productivity score table is still for the Daily Score phase.
 
 ## Important Rules
@@ -95,10 +106,10 @@
 
 ## Next Recommended Step
 
-Begin Phase 5: Focus Session.
+Begin Phase 6: Local Reminders.
 
-- Implement real focus timer state.
-- Save focus sessions to Drift.
-- Connect `/focus/:routineId` to routine data.
-- Let users start, pause, resume, finish, add distraction count, and save notes.
-- Update or create routine logs with actual duration when focus finishes.
+- Initialize `flutter_local_notifications` and timezone support.
+- Add notification service and scheduler.
+- Request Android notification permission where required.
+- Schedule preparation, start, late, and recovery reminders for fixed-time routines.
+- Cancel and reschedule reminders when routines change.
