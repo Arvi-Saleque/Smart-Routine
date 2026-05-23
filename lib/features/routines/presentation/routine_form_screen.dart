@@ -31,7 +31,6 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _targetValueController = TextEditingController();
-  final _targetUnitController = TextEditingController(text: 'minutes');
   final _fullDurationController = TextEditingController(text: '60');
   final _mediumDurationController = TextEditingController(text: '30');
   final _miniDurationController = TextEditingController(text: '10');
@@ -41,6 +40,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
   GoalType _goalType = GoalType.duration;
   PriorityLevel _priority = PriorityLevel.medium;
   DifficultyLevel _difficulty = DifficultyLevel.normal;
+  String _targetUnit = 'minutes';
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
   Set<int> _repeatDays = {1, 2, 3, 4, 5, 6, 7};
@@ -53,7 +53,6 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _targetValueController.dispose();
-    _targetUnitController.dispose();
     _fullDurationController.dispose();
     _mediumDurationController.dispose();
     _miniDurationController.dispose();
@@ -111,231 +110,53 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
                 'Save the time block, goal, repeat days, and recovery versions.',
           ),
           const SizedBox(height: 16),
-          _FormCard(
-            title: 'Basic info',
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                textInputAction: TextInputAction.next,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Title is required';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                minLines: 2,
-                maxLines: 4,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _categoryId,
-                decoration: const InputDecoration(labelText: 'Category'),
-                items: categories
-                    .map(
-                      (category) => DropdownMenuItem(
-                        value: category.id,
-                        child: Row(
-                          children: [
-                            Icon(
-                              categoryIconFromName(category.iconName),
-                              color: Color(category.colorValue),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(category.name),
-                          ],
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _categoryId = value),
-                validator: (value) =>
-                    value == null ? 'Category is required' : null,
-              ),
-            ],
+          _BasicInfoSection(
+            titleController: _titleController,
+            descriptionController: _descriptionController,
+            categories: categories,
+            categoryId: _categoryId,
+            onCategoryChanged: (value) => setState(() => _categoryId = value),
           ),
           const SizedBox(height: 12),
-          _FormCard(
-            title: 'Schedule',
-            children: [
-              DropdownButtonFormField<RoutineType>(
-                initialValue: _routineType,
-                decoration: const InputDecoration(labelText: 'Routine type'),
-                items: RoutineType.values
-                    .map(
-                      (type) => DropdownMenuItem(
-                        value: type,
-                        child: Text(type.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _routineType = value!),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _TimeButton(
-                      label: 'Start',
-                      time: _startTime,
-                      onTap: () => _pickTime(isStart: true),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _TimeButton(
-                      label: 'End',
-                      time: _endTime,
-                      onTap: () => _pickTime(isStart: false),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final day in DateTimeUtils.weekdayShortLabels.entries)
-                    FilterChip(
-                      selected: _repeatDays.contains(day.key),
-                      label: Text(day.value),
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _repeatDays.add(day.key);
-                          } else {
-                            _repeatDays.remove(day.key);
-                          }
-                        });
-                      },
-                    ),
-                ],
-              ),
-            ],
+          _ScheduleSection(
+            routineType: _routineType,
+            startTime: _startTime,
+            endTime: _endTime,
+            repeatDays: _repeatDays,
+            onRoutineTypeChanged: (value) =>
+                setState(() => _routineType = value),
+            onPickStart: () => _pickTime(isStart: true),
+            onPickEnd: () => _pickTime(isStart: false),
+            onRepeatDayChanged: _setRepeatDay,
           ),
           const SizedBox(height: 12),
-          _FormCard(
-            title: 'Goal',
-            children: [
-              DropdownButtonFormField<GoalType>(
-                initialValue: _goalType,
-                decoration: const InputDecoration(labelText: 'Goal type'),
-                items: GoalType.values
-                    .map(
-                      (type) => DropdownMenuItem(
-                        value: type,
-                        child: Text(type.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _goalType = value!),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _targetValueController,
-                      decoration: const InputDecoration(
-                        labelText: 'Target value',
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                      ],
-                      validator: _validateOptionalPositiveNumber,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _targetUnitController.text,
-                      decoration: const InputDecoration(labelText: 'Unit'),
-                      items: _targetUnits
-                          .map(
-                            (unit) => DropdownMenuItem(
-                              value: unit,
-                              child: Text(unit),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) _targetUnitController.text = value;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _EnumDropdown<PriorityLevel>(
-                      label: 'Priority',
-                      value: _priority,
-                      values: PriorityLevel.values,
-                      labelFor: (value) => value.label,
-                      onChanged: (value) => setState(() => _priority = value),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _EnumDropdown<DifficultyLevel>(
-                      label: 'Difficulty',
-                      value: _difficulty,
-                      values: DifficultyLevel.values,
-                      labelFor: (value) => value.label,
-                      onChanged: (value) => setState(() => _difficulty = value),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          _GoalSection(
+            goalType: _goalType,
+            targetValueController: _targetValueController,
+            targetUnit: _targetUnit,
+            priority: _priority,
+            difficulty: _difficulty,
+            onGoalTypeChanged: (value) => setState(() {
+              _goalType = value;
+              if (value == GoalType.simpleCheck) {
+                _targetValueController.clear();
+              }
+            }),
+            onTargetUnitChanged: (value) => setState(() => _targetUnit = value),
+            onPriorityChanged: (value) => setState(() => _priority = value),
+            onDifficultyChanged: (value) => setState(() => _difficulty = value),
           ),
           const SizedBox(height: 12),
-          _FormCard(
-            title: 'Recovery versions',
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _DurationField(
-                      label: 'Full min',
-                      controller: _fullDurationController,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _DurationField(
-                      label: 'Medium min',
-                      controller: _mediumDurationController,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _DurationField(
-                      label: 'Mini min',
-                      controller: _miniDurationController,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                value: _reminderEnabled,
-                onChanged: (value) => setState(() => _reminderEnabled = value),
-                title: const Text('Enable reminders'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ],
+          _RecoveryVersionsSection(
+            fullDurationController: _fullDurationController,
+            mediumDurationController: _mediumDurationController,
+            miniDurationController: _miniDurationController,
+          ),
+          const SizedBox(height: 12),
+          _ReminderSection(
+            routineType: _routineType,
+            reminderEnabled: _reminderEnabled,
+            onChanged: (value) => setState(() => _reminderEnabled = value),
           ),
           const SizedBox(height: 20),
           FilledButton.icon(
@@ -362,7 +183,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     _targetValueController.text = data.targetValue == null
         ? ''
         : data.targetValue!.toString();
-    _targetUnitController.text = data.targetUnit ?? 'minutes';
+    _targetUnit = _stableTargetUnit(data.targetUnit);
     _fullDurationController.text = data.fullDurationMinutes.toString();
     _mediumDurationController.text = data.mediumDurationMinutes.toString();
     _miniDurationController.text = data.miniDurationMinutes.toString();
@@ -376,6 +197,16 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     _repeatDays = {...data.repeatDays};
     _reminderEnabled = data.reminderEnabled;
     _initialized = true;
+  }
+
+  void _setRepeatDay(int weekday, bool selected) {
+    setState(() {
+      if (selected) {
+        _repeatDays.add(weekday);
+      } else {
+        _repeatDays.remove(weekday);
+      }
+    });
   }
 
   Future<void> _pickTime({required bool isStart}) async {
@@ -399,56 +230,18 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
 
     final startMinutes = DateTimeUtils.timeOfDayToMinutes(_startTime);
     final endMinutes = DateTimeUtils.timeOfDayToMinutes(_endTime);
-    if (endMinutes <= startMinutes) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('End time must be after start time.')),
-      );
-      return;
-    }
-    if (_repeatDays.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Select at least one repeat day.')),
-      );
-      return;
-    }
+    final data = _formData(startMinutes: startMinutes, endMinutes: endMinutes);
 
-    final full = int.parse(_fullDurationController.text);
-    final medium = int.parse(_mediumDurationController.text);
-    final mini = int.parse(_miniDurationController.text);
-    if (mini > medium || medium > full) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Mini must be <= medium, and medium must be <= full.'),
-        ),
-      );
+    try {
+      data.validate();
+    } on RoutineFormValidationException catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
       return;
     }
-
-    final repository = ref.read(routineRepositoryProvider);
-    final data = RoutineFormData(
-      title: _titleController.text,
-      description: _descriptionController.text,
-      categoryId: _categoryId!,
-      routineType: _routineType,
-      goalType: _goalType,
-      targetValue: _targetValueController.text.trim().isEmpty
-          ? null
-          : double.parse(_targetValueController.text),
-      targetUnit: _targetUnitController.text,
-      priority: _priority,
-      difficulty: _difficulty,
-      startTimeMinutes: startMinutes,
-      endTimeMinutes: endMinutes,
-      repeatDays: _repeatDays,
-      fullDurationMinutes: full,
-      mediumDurationMinutes: medium,
-      miniDurationMinutes: mini,
-      reminderEnabled: _reminderEnabled,
-      timezone: DateTime.now().timeZoneName,
-    );
 
     setState(() => _saving = true);
     try {
+      final repository = ref.read(routineRepositoryProvider);
       final routineId = widget.routineId;
       if (routineId == null) {
         final createdId = await repository.createRoutine(data);
@@ -464,12 +257,389 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     }
   }
 
-  String? _validateOptionalPositiveNumber(String? value) {
-    final trimmed = value?.trim() ?? '';
-    if (trimmed.isEmpty) return null;
-    final parsed = double.tryParse(trimmed);
-    if (parsed == null || parsed <= 0) return 'Use a positive number';
-    return null;
+  RoutineFormData _formData({
+    required int startMinutes,
+    required int endMinutes,
+  }) {
+    final targetText = _targetValueController.text.trim();
+    return RoutineFormData(
+      title: _titleController.text,
+      description: _descriptionController.text,
+      categoryId: _categoryId ?? '',
+      routineType: _routineType,
+      goalType: _goalType,
+      targetValue: targetText.isEmpty ? null : double.tryParse(targetText),
+      targetUnit: _goalType == GoalType.simpleCheck ? null : _targetUnit,
+      priority: _priority,
+      difficulty: _difficulty,
+      startTimeMinutes: startMinutes,
+      endTimeMinutes: endMinutes,
+      repeatDays: _repeatDays,
+      fullDurationMinutes: int.tryParse(_fullDurationController.text) ?? 0,
+      mediumDurationMinutes: int.tryParse(_mediumDurationController.text) ?? 0,
+      miniDurationMinutes: int.tryParse(_miniDurationController.text) ?? 0,
+      reminderEnabled: _reminderEnabled,
+      timezone: DateTime.now().timeZoneName,
+    );
+  }
+}
+
+String? _validateTargetValue(GoalType goalType, String? value) {
+  final trimmed = value?.trim() ?? '';
+  if (goalType == GoalType.simpleCheck) return null;
+  if (trimmed.isEmpty) return 'Target value is required';
+  return _validateOptionalPositiveNumber(value);
+}
+
+String? _validateOptionalPositiveNumber(String? value) {
+  final trimmed = value?.trim() ?? '';
+  if (trimmed.isEmpty) return null;
+  final parsed = double.tryParse(trimmed);
+  if (parsed == null || parsed <= 0) return 'Use a positive number';
+  return null;
+}
+
+String _stableTargetUnit(String? value) {
+  if (value != null && _targetUnits.contains(value)) return value;
+  return 'minutes';
+}
+
+class _BasicInfoSection extends StatelessWidget {
+  const _BasicInfoSection({
+    required this.titleController,
+    required this.descriptionController,
+    required this.categories,
+    required this.categoryId,
+    required this.onCategoryChanged,
+  });
+
+  final TextEditingController titleController;
+  final TextEditingController descriptionController;
+  final List<Category> categories;
+  final String? categoryId;
+  final ValueChanged<String?> onCategoryChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final stableCategoryId =
+        categories.any((category) => category.id == categoryId)
+        ? categoryId
+        : null;
+
+    return _FormCard(
+      title: 'Basic info',
+      children: [
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(labelText: 'Title'),
+          textInputAction: TextInputAction.next,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Title is required';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(labelText: 'Description'),
+          minLines: 2,
+          maxLines: 4,
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: stableCategoryId,
+          decoration: const InputDecoration(labelText: 'Category'),
+          items: categories
+              .map(
+                (category) => DropdownMenuItem(
+                  value: category.id,
+                  child: Row(
+                    children: [
+                      Icon(
+                        categoryIconFromName(category.iconName),
+                        color: Color(category.colorValue),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(category.name),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: onCategoryChanged,
+          validator: (value) => value == null ? 'Category is required' : null,
+        ),
+      ],
+    );
+  }
+}
+
+class _ScheduleSection extends StatelessWidget {
+  const _ScheduleSection({
+    required this.routineType,
+    required this.startTime,
+    required this.endTime,
+    required this.repeatDays,
+    required this.onRoutineTypeChanged,
+    required this.onPickStart,
+    required this.onPickEnd,
+    required this.onRepeatDayChanged,
+  });
+
+  final RoutineType routineType;
+  final TimeOfDay startTime;
+  final TimeOfDay endTime;
+  final Set<int> repeatDays;
+  final ValueChanged<RoutineType> onRoutineTypeChanged;
+  final VoidCallback onPickStart;
+  final VoidCallback onPickEnd;
+  final void Function(int weekday, bool selected) onRepeatDayChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _FormCard(
+      title: 'Schedule',
+      children: [
+        _EnumDropdown<RoutineType>(
+          label: 'Routine type',
+          value: routineType,
+          values: RoutineType.values,
+          labelFor: (type) => type.label,
+          onChanged: onRoutineTypeChanged,
+        ),
+        if (routineType != RoutineType.fixedTime) ...[
+          const SizedBox(height: 12),
+          const _WarningPanel(
+            icon: Icons.notifications_paused_outlined,
+            message:
+                'MVP reminder scheduling only supports fixed-time routines.',
+          ),
+        ],
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _TimeButton(
+                label: 'Start',
+                time: startTime,
+                onTap: onPickStart,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _TimeButton(label: 'End', time: endTime, onTap: onPickEnd),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final day in DateTimeUtils.weekdayShortLabels.entries)
+              FilterChip(
+                selected: repeatDays.contains(day.key),
+                label: Text(day.value),
+                onSelected: (selected) => onRepeatDayChanged(day.key, selected),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _GoalSection extends StatelessWidget {
+  const _GoalSection({
+    required this.goalType,
+    required this.targetValueController,
+    required this.targetUnit,
+    required this.priority,
+    required this.difficulty,
+    required this.onGoalTypeChanged,
+    required this.onTargetUnitChanged,
+    required this.onPriorityChanged,
+    required this.onDifficultyChanged,
+  });
+
+  final GoalType goalType;
+  final TextEditingController targetValueController;
+  final String targetUnit;
+  final PriorityLevel priority;
+  final DifficultyLevel difficulty;
+  final ValueChanged<GoalType> onGoalTypeChanged;
+  final ValueChanged<String> onTargetUnitChanged;
+  final ValueChanged<PriorityLevel> onPriorityChanged;
+  final ValueChanged<DifficultyLevel> onDifficultyChanged;
+
+  bool get _requiresTarget => goalType != GoalType.simpleCheck;
+
+  @override
+  Widget build(BuildContext context) {
+    return _FormCard(
+      title: 'Goal',
+      children: [
+        _EnumDropdown<GoalType>(
+          label: 'Goal type',
+          value: goalType,
+          values: GoalType.values,
+          labelFor: (type) => type.label,
+          onChanged: onGoalTypeChanged,
+        ),
+        if (_requiresTarget) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: targetValueController,
+                  decoration: const InputDecoration(labelText: 'Target value'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
+                  validator: (value) => _validateTargetValue(goalType, value),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: _stableTargetUnit(targetUnit),
+                  decoration: const InputDecoration(labelText: 'Unit'),
+                  items: _targetUnits
+                      .map(
+                        (unit) =>
+                            DropdownMenuItem(value: unit, child: Text(unit)),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) onTargetUnitChanged(value);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ] else ...[
+          const SizedBox(height: 12),
+          const _InfoPanel(
+            icon: Icons.check_circle_outline,
+            message:
+                'Simple check routines only need a completed/not completed mark.',
+          ),
+        ],
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _EnumDropdown<PriorityLevel>(
+                label: 'Priority',
+                value: priority,
+                values: PriorityLevel.values,
+                labelFor: (value) => value.label,
+                onChanged: onPriorityChanged,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _EnumDropdown<DifficultyLevel>(
+                label: 'Difficulty',
+                value: difficulty,
+                values: DifficultyLevel.values,
+                labelFor: (value) => value.label,
+                onChanged: onDifficultyChanged,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _RecoveryVersionsSection extends StatelessWidget {
+  const _RecoveryVersionsSection({
+    required this.fullDurationController,
+    required this.mediumDurationController,
+    required this.miniDurationController,
+  });
+
+  final TextEditingController fullDurationController;
+  final TextEditingController mediumDurationController;
+  final TextEditingController miniDurationController;
+
+  @override
+  Widget build(BuildContext context) {
+    return _FormCard(
+      title: 'Recovery versions',
+      children: [
+        const _InfoPanel(
+          icon: Icons.layers_outlined,
+          message:
+              'Full is the ideal session, medium is a shorter fallback, and mini is the smallest recovery version.',
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _DurationField(
+                label: 'Full min',
+                controller: fullDurationController,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _DurationField(
+                label: 'Medium min',
+                controller: mediumDurationController,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _DurationField(
+                label: 'Mini min',
+                controller: miniDurationController,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ReminderSection extends StatelessWidget {
+  const _ReminderSection({
+    required this.routineType,
+    required this.reminderEnabled,
+    required this.onChanged,
+  });
+
+  final RoutineType routineType;
+  final bool reminderEnabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _FormCard(
+      title: 'Reminders',
+      children: [
+        SwitchListTile(
+          value: reminderEnabled,
+          onChanged: onChanged,
+          title: const Text('Enable reminders'),
+          subtitle: Text(
+            routineType == RoutineType.fixedTime
+                ? 'Local reminders will be scheduled for fixed-time routines.'
+                : 'Saved, but scheduler will skip this routine type in the MVP.',
+          ),
+          contentPadding: EdgeInsets.zero,
+        ),
+      ],
+    );
   }
 }
 
@@ -577,6 +747,79 @@ class _DurationField extends StatelessWidget {
         if (parsed == null || parsed <= 0) return 'Required';
         return null;
       },
+    );
+  }
+}
+
+class _InfoPanel extends StatelessWidget {
+  const _InfoPanel({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return _MessagePanel(
+      icon: icon,
+      message: message,
+      backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.35),
+      foregroundColor: colorScheme.onPrimaryContainer,
+    );
+  }
+}
+
+class _WarningPanel extends StatelessWidget {
+  const _WarningPanel({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return _MessagePanel(
+      icon: icon,
+      message: message,
+      backgroundColor: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+      foregroundColor: colorScheme.onSecondaryContainer,
+    );
+  }
+}
+
+class _MessagePanel extends StatelessWidget {
+  const _MessagePanel({
+    required this.icon,
+    required this.message,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
+
+  final IconData icon;
+  final String message;
+  final Color backgroundColor;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: foregroundColor),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(message, style: TextStyle(color: foregroundColor)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

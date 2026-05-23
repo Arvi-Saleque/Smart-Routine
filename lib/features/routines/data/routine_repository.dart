@@ -94,6 +94,8 @@ class RoutineRepository {
   }
 
   Future<String> createRoutine(RoutineFormData data) async {
+    data.validate();
+
     final now = DateTime.now();
     final routineId = _uuid.v4();
     final scheduleId = _scheduleIdFor(routineId);
@@ -159,6 +161,8 @@ class RoutineRepository {
   }
 
   Future<void> updateRoutine(String routineId, RoutineFormData data) async {
+    data.validate();
+
     final now = DateTime.now();
     final existingRoutine =
         await (_database.select(_database.routines)
@@ -378,6 +382,49 @@ class RoutineFormData {
   final bool reminderEnabled;
   final String timezone;
 
+  void validate() {
+    if (title.trim().isEmpty) {
+      throw const RoutineFormValidationException('Title is required.');
+    }
+    if (categoryId.trim().isEmpty) {
+      throw const RoutineFormValidationException('Category is required.');
+    }
+    if (repeatDays.isEmpty) {
+      throw const RoutineFormValidationException(
+        'Select at least one repeat day.',
+      );
+    }
+    if (endTimeMinutes <= startTimeMinutes) {
+      throw const RoutineFormValidationException(
+        'End time must be after start time. Overnight routines are not supported in the MVP.',
+      );
+    }
+    if (goalType != GoalType.simpleCheck &&
+        (targetValue == null || targetValue! <= 0)) {
+      throw const RoutineFormValidationException(
+        'Target value is required for this goal type.',
+      );
+    }
+    if (targetValue != null && targetValue! <= 0) {
+      throw const RoutineFormValidationException(
+        'Target value must be positive.',
+      );
+    }
+    if (fullDurationMinutes <= 0 ||
+        mediumDurationMinutes <= 0 ||
+        miniDurationMinutes <= 0) {
+      throw const RoutineFormValidationException(
+        'Full, medium, and mini versions must be positive.',
+      );
+    }
+    if (miniDurationMinutes > mediumDurationMinutes ||
+        mediumDurationMinutes > fullDurationMinutes) {
+      throw const RoutineFormValidationException(
+        'Mini must be <= medium, and medium must be <= full.',
+      );
+    }
+  }
+
   static RoutineFormData fromDetail(RoutineDetail detail) {
     final routine = detail.routine;
     final schedule = detail.schedule;
@@ -402,4 +449,13 @@ class RoutineFormData {
       timezone: schedule?.timezone ?? DateTime.now().timeZoneName,
     );
   }
+}
+
+class RoutineFormValidationException implements Exception {
+  const RoutineFormValidationException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }

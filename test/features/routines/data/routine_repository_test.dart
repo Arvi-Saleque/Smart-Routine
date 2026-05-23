@@ -113,6 +113,89 @@ void main() {
       expect(await repository.getRoutineDetail(routineId), isNull);
     },
   );
+
+  test('invalid empty title fails', () async {
+    await expectLater(
+      repository.createRoutine(_validFormData(title: ' ')),
+      throwsA(isA<RoutineFormValidationException>()),
+    );
+  });
+
+  test('end before start fails', () async {
+    await expectLater(
+      repository.createRoutine(
+        _validFormData(startTimeMinutes: 660, endTimeMinutes: 600),
+      ),
+      throwsA(isA<RoutineFormValidationException>()),
+    );
+  });
+
+  test('no repeat day fails', () async {
+    await expectLater(
+      repository.createRoutine(_validFormData(repeatDays: const {})),
+      throwsA(isA<RoutineFormValidationException>()),
+    );
+  });
+
+  test('simpleCheck can save without target', () async {
+    final routineId = await repository.createRoutine(
+      _validFormData(goalType: GoalType.simpleCheck, targetValue: null),
+    );
+
+    final detail = await repository.getRoutineDetail(routineId);
+
+    expect(detail, isNotNull);
+    expect(detail!.routine.goalType, GoalType.simpleCheck.name);
+    expect(detail.routine.targetValue, isNull);
+  });
+
+  test('duration count and quantity goals require target', () async {
+    for (final goalType in [
+      GoalType.duration,
+      GoalType.count,
+      GoalType.quantity,
+    ]) {
+      await expectLater(
+        repository.createRoutine(
+          _validFormData(goalType: goalType, targetValue: null),
+        ),
+        throwsA(isA<RoutineFormValidationException>()),
+      );
+    }
+  });
+}
+
+RoutineFormData _validFormData({
+  String title = 'Read Bangla',
+  String categoryId = 'reading',
+  RoutineType routineType = RoutineType.fixedTime,
+  GoalType goalType = GoalType.quantity,
+  double? targetValue = 20,
+  int startTimeMinutes = 600,
+  int endTimeMinutes = 660,
+  Set<int> repeatDays = const {1, 2, 3},
+  int fullDurationMinutes = 60,
+  int mediumDurationMinutes = 30,
+  int miniDurationMinutes = 10,
+}) {
+  return RoutineFormData(
+    title: title,
+    categoryId: categoryId,
+    routineType: routineType,
+    goalType: goalType,
+    targetValue: targetValue,
+    targetUnit: 'pages',
+    priority: PriorityLevel.medium,
+    difficulty: DifficultyLevel.normal,
+    startTimeMinutes: startTimeMinutes,
+    endTimeMinutes: endTimeMinutes,
+    repeatDays: repeatDays,
+    fullDurationMinutes: fullDurationMinutes,
+    mediumDurationMinutes: mediumDurationMinutes,
+    miniDurationMinutes: miniDurationMinutes,
+    reminderEnabled: true,
+    timezone: 'Asia/Dhaka',
+  );
 }
 
 class _FakeRoutineNotificationScheduler

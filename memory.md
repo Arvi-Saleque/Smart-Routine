@@ -187,6 +187,7 @@
 - Settings persistence tests: passed.
 - Theme mode provider test: passed.
 - Settings clear-data test: passed.
+- Routine form validation tests: passed.
 
 ## Known Issues
 
@@ -221,6 +222,19 @@
 - Clear all data now cancels local routine notifications, clears user database rows, re-seeds default categories, and preserves SharedPreferences app settings.
 - Added tests for SharedPreferences persistence, theme provider behavior, clear-data safety, and custom notification reminder offsets.
 - Ran `dart format lib test`.
+- Ran `flutter analyze`: passed with no issues.
+- Ran `flutter test`: passed.
+
+## Latest Update: Routine Form Cleanup
+
+- Split `RoutineFormScreen` into private form sections: basic info, schedule, goal, recovery versions, and reminders.
+- Added shared `RoutineFormData.validate()` rules used by create/update and the form submit path.
+- Enforced required title/category/repeat days, positive target values where needed, non-overnight time ranges, positive recovery durations, and `mini <= medium <= full`.
+- Hid target value/unit inputs for `simpleCheck` goals.
+- Added helper messaging for recovery versions and fixed-time-only MVP reminder scheduling.
+- Stabilized category/unit dropdown values during rebuilds.
+- Added routine repository validation tests for empty title, invalid time range, missing repeat days, simple checks without targets, and target-required goal types.
+- Ran `dart format` for touched files.
 - Ran `flutter analyze`: passed with no issues.
 - Ran `flutter test`: passed.
 
