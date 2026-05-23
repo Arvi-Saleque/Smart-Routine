@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/enums/routine_status.dart';
+import '../../../core/notifications/notification_scheduler.dart';
 import '../../../core/utils/date_time_utils.dart';
 import '../../../core/utils/recurrence_utils.dart';
 import '../../routines/data/routine_repository.dart';
@@ -13,12 +14,15 @@ class TodayRepository {
     this._database, {
     Uuid? uuid,
     DailyScoreRepository? scoreRepository,
+    RoutineNotificationScheduler? notificationScheduler,
   }) : _uuid = uuid ?? const Uuid(),
-       _scoreRepository = scoreRepository ?? DailyScoreRepository(_database);
+       _scoreRepository = scoreRepository ?? DailyScoreRepository(_database),
+       _notificationScheduler = notificationScheduler;
 
   final AppDatabase _database;
   final Uuid _uuid;
   final DailyScoreRepository _scoreRepository;
+  final RoutineNotificationScheduler? _notificationScheduler;
 
   Future<TodayTimeline> getTimelineForDate(
     DateTime date, {
@@ -119,6 +123,7 @@ class TodayRepository {
       actualDurationMinutes: plannedDuration,
       updatedAt: now,
     );
+    await _cancelActionReminders(entry);
   }
 
   Future<void> markSkipped(TodayTimelineEntry entry, String skipReason) async {
@@ -128,6 +133,7 @@ class TodayRepository {
       skipReason: skipReason,
       updatedAt: DateTime.now(),
     );
+    await _cancelActionReminders(entry);
   }
 
   Future<void> rescheduleLaterToday(TodayTimelineEntry entry) async {
@@ -187,6 +193,13 @@ class TodayRepository {
         updatedAt: now,
       );
     });
+  }
+
+  Future<void> _cancelActionReminders(TodayTimelineEntry entry) async {
+    await _notificationScheduler?.cancelRemainingTodayReminders(
+      entry.detail.routine.id,
+      now: DateTime.parse(entry.dateKey),
+    );
   }
 
   Future<void> _upsertLog({

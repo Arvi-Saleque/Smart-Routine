@@ -31,17 +31,18 @@ void main() {
   });
 
   test('schedules four reminders for each repeat day', () async {
+    final repeatDays = _futureWeekdays(2);
     await _insertRoutine(database, routineId: 'routine-1');
 
     await scheduler.scheduleRoutineReminders(
-      const RoutineReminderSchedule(
+      RoutineReminderSchedule(
         routineId: 'routine-1',
         title: 'Read Bangla',
         routineType: 'fixedTime',
         targetSummary: '20 pages',
         startTimeMinutes: 1320,
         endTimeMinutes: 1380,
-        repeatDays: {1, 3},
+        repeatDays: repeatDays,
         fullDurationMinutes: 60,
         miniDurationMinutes: 10,
         isActive: true,
@@ -61,19 +62,20 @@ void main() {
   });
 
   test('uses stored preparation and late reminder defaults', () async {
+    final repeatDays = _futureWeekdays(1);
     settings.preparationMinutes = 20;
     settings.lateMinutes = 7;
     await _insertRoutine(database, routineId: 'routine-custom');
 
     await scheduler.scheduleRoutineReminders(
-      const RoutineReminderSchedule(
+      RoutineReminderSchedule(
         routineId: 'routine-custom',
         title: 'Read Bangla',
         routineType: 'fixedTime',
         targetSummary: '20 pages',
         startTimeMinutes: 1320,
         endTimeMinutes: 1380,
-        repeatDays: {1},
+        repeatDays: repeatDays,
         fullDurationMinutes: 60,
         miniDurationMinutes: 10,
         isActive: true,
@@ -145,16 +147,17 @@ void main() {
   test(
     'cancellation removes reminder rows and cancels notification ids',
     () async {
+      final repeatDays = _futureWeekdays(1);
       await _insertRoutine(database, routineId: 'routine-4');
       await scheduler.scheduleRoutineReminders(
-        const RoutineReminderSchedule(
+        RoutineReminderSchedule(
           routineId: 'routine-4',
           title: 'Read Bangla',
           routineType: 'fixedTime',
           targetSummary: '20 pages',
           startTimeMinutes: 1320,
           endTimeMinutes: 1380,
-          repeatDays: {1},
+          repeatDays: repeatDays,
           fullDurationMinutes: 60,
           miniDurationMinutes: 10,
           isActive: true,
@@ -168,7 +171,7 @@ void main() {
       final reminders = await database.select(database.reminders).get();
 
       expect(reminders, isEmpty);
-      expect(notifications.calls, hasLength(28));
+      expect(notifications.calls, hasLength(84));
       expect(
         notifications.calls.every((call) => call.type == 'cancel'),
         isTrue,
@@ -179,15 +182,17 @@ void main() {
   test(
     'rescheduling cancels old ids before scheduling new reminders',
     () async {
+      final firstRepeatDays = _futureWeekdays(1);
+      final secondRepeatDays = _futureWeekdays(1, startOffset: 2);
       await _insertRoutine(database, routineId: 'routine-5');
-      const firstSchedule = RoutineReminderSchedule(
+      final firstSchedule = RoutineReminderSchedule(
         routineId: 'routine-5',
         title: 'Read Bangla',
         routineType: 'fixedTime',
         targetSummary: '20 pages',
         startTimeMinutes: 1320,
         endTimeMinutes: 1380,
-        repeatDays: {1},
+        repeatDays: firstRepeatDays,
         fullDurationMinutes: 60,
         miniDurationMinutes: 10,
         isActive: true,
@@ -198,14 +203,14 @@ void main() {
       notifications.clearCalls();
 
       await scheduler.scheduleRoutineReminders(
-        const RoutineReminderSchedule(
+        RoutineReminderSchedule(
           routineId: 'routine-5',
           title: 'Read Bangla',
           routineType: 'fixedTime',
           targetSummary: '20 pages',
           startTimeMinutes: 1380,
           endTimeMinutes: 1440,
-          repeatDays: {2},
+          repeatDays: secondRepeatDays,
           fullDurationMinutes: 60,
           miniDurationMinutes: 10,
           isActive: true,
@@ -213,17 +218,83 @@ void main() {
         ),
       );
 
-      expect(notifications.calls, hasLength(32));
+      expect(notifications.calls, hasLength(88));
       expect(
-        notifications.calls.take(28).every((call) => call.type == 'cancel'),
+        notifications.calls.take(84).every((call) => call.type == 'cancel'),
         isTrue,
       );
       expect(
-        notifications.calls.skip(28).every((call) => call.type == 'schedule'),
+        notifications.calls.skip(84).every((call) => call.type == 'schedule'),
         isTrue,
       );
     },
   );
+
+  test('today cancellation keeps future day reminders active', () async {
+    final today = DateTime.now();
+    final tomorrow = today.add(const Duration(days: 1));
+    await _insertRoutine(database, routineId: 'routine-future-safe');
+
+    await scheduler.scheduleRoutineReminders(
+      RoutineReminderSchedule(
+        routineId: 'routine-future-safe',
+        title: 'Read Bangla',
+        routineType: 'fixedTime',
+        targetSummary: '20 pages',
+        startTimeMinutes: 720,
+        endTimeMinutes: 780,
+        repeatDays: {today.weekday, tomorrow.weekday},
+        fullDurationMinutes: 60,
+        miniDurationMinutes: 10,
+        isActive: true,
+        reminderEnabled: true,
+      ),
+    );
+
+    await scheduler.cancelRemainingTodayReminders(
+      'routine-future-safe',
+      now: today,
+    );
+
+    expect(
+      notifications.cancelled,
+      containsAll([
+        notificationIdForDate(
+          routineId: 'routine-future-safe',
+          type: RoutineReminderType.start,
+          date: today,
+        ),
+        notificationIdForDate(
+          routineId: 'routine-future-safe',
+          type: RoutineReminderType.late,
+          date: today,
+        ),
+        notificationIdForDate(
+          routineId: 'routine-future-safe',
+          type: RoutineReminderType.recovery,
+          date: today,
+        ),
+      ]),
+    );
+    expect(
+      notifications.active,
+      contains(
+        notificationIdForDate(
+          routineId: 'routine-future-safe',
+          type: RoutineReminderType.start,
+          date: tomorrow,
+        ),
+      ),
+    );
+  });
+}
+
+Set<int> _futureWeekdays(int count, {int startOffset = 1}) {
+  final today = DateTime.now();
+  return {
+    for (var offset = startOffset; offset < startOffset + count; offset++)
+      today.add(Duration(days: offset)).weekday,
+  };
 }
 
 Future<void> _insertRoutine(
@@ -259,17 +330,20 @@ class _FakeNotificationGateway implements NotificationGateway {
   int initializeCalls = 0;
   final scheduled = <int>[];
   final cancelled = <int>[];
+  final active = <int>{};
   final calls = <_NotificationCall>[];
 
   void clearCalls() {
     calls.clear();
     scheduled.clear();
     cancelled.clear();
+    active.clear();
   }
 
   @override
   Future<void> cancel(int id) async {
     cancelled.add(id);
+    active.remove(id);
     calls.add(_NotificationCall('cancel', id));
   }
 
@@ -280,7 +354,7 @@ class _FakeNotificationGateway implements NotificationGateway {
   }
 
   @override
-  Future<void> scheduleWeekly({
+  Future<void> scheduleOneTime({
     required int id,
     required String title,
     required String body,
@@ -288,6 +362,7 @@ class _FakeNotificationGateway implements NotificationGateway {
     required String payload,
   }) async {
     scheduled.add(id);
+    active.add(id);
     calls.add(_NotificationCall('schedule', id));
   }
 }

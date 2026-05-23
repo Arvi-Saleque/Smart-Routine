@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/enums/routine_status.dart';
+import '../../../core/notifications/notification_scheduler.dart';
 import '../../../core/utils/date_time_utils.dart';
 import '../../routines/data/routine_repository.dart';
 import '../../today/data/daily_score_repository.dart';
@@ -12,12 +13,22 @@ class FocusRepository {
     this._database, {
     Uuid? uuid,
     DailyScoreRepository? scoreRepository,
+    RoutineNotificationScheduler? notificationScheduler,
   }) : _uuid = uuid ?? const Uuid(),
-       _scoreRepository = scoreRepository ?? DailyScoreRepository(_database);
+       _scoreRepository = scoreRepository ?? DailyScoreRepository(_database),
+       _notificationScheduler = notificationScheduler;
 
   final AppDatabase _database;
   final Uuid _uuid;
   final DailyScoreRepository _scoreRepository;
+  final RoutineNotificationScheduler? _notificationScheduler;
+
+  Future<void> startSession(RoutineDetail detail, {DateTime? startedAt}) async {
+    await _notificationScheduler?.cancelRemainingTodayReminders(
+      detail.routine.id,
+      now: startedAt ?? DateTime.now(),
+    );
+  }
 
   Future<FocusSaveResult> finishSession(FocusSessionDraft draft) async {
     final dateKey = DateTimeUtils.dateKey(draft.startedAt);
@@ -112,6 +123,10 @@ class FocusRepository {
     await _scoreRepository.calculateAndSaveForDate(
       draft.startedAt,
       now: draft.endedAt,
+    );
+    await _notificationScheduler?.cancelRemainingTodayReminders(
+      routine.id,
+      now: draft.startedAt,
     );
 
     return result;

@@ -10,6 +10,7 @@
 - `flutter_local_notifications` requires Android core library desugaring, which is enabled in `android/app/build.gradle.kts`.
 - Kotlin compilation is configured to run in-process to avoid Windows incremental-cache noise when dependencies live outside the project drive.
 - Routine reminders request notification permission at runtime and declare scheduled-notification receivers plus boot-completed permission in the manifest so reminders can survive reboot/package replacement.
+- RoutineOS schedules rolling one-time local reminders for the next week instead of indefinite weekly repeating alarms. This lets the app cancel today's late/recovery reminder after completion, skip, or recovery without deleting future-day reminders.
 - MVP reminder timezone defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
 - For manual Android testing, install the debug APK, grant notification permission on first launch, and verify the Settings reminder toggle can pause and restore scheduled routine reminders.
 - Some OEM Android builds may delay or block scheduled alarms while the app is in the background, especially when battery saver or aggressive app standby modes are enabled.

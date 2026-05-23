@@ -5,7 +5,7 @@ import 'package:timezone/timezone.dart' as tz;
 abstract class NotificationGateway {
   Future<bool> initialize();
 
-  Future<void> scheduleWeekly({
+  Future<void> scheduleOneTime({
     required int id,
     required String title,
     required String body,
@@ -65,7 +65,7 @@ class LocalNotificationService implements NotificationGateway {
   }
 
   @override
-  Future<void> scheduleWeekly({
+  Future<void> scheduleOneTime({
     required int id,
     required String title,
     required String body,
@@ -89,7 +89,6 @@ class LocalNotificationService implements NotificationGateway {
         macOS: DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       payload: payload,
     );
   }

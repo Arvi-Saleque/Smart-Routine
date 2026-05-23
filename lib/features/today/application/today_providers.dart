@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database_provider.dart';
+import '../../../core/notifications/notification_providers.dart';
 import '../data/today_repository.dart';
 import 'today_controller.dart';
 
 final todayRepositoryProvider = Provider<TodayRepository>(
-  (ref) => TodayRepository(ref.watch(appDatabaseProvider)),
+  (ref) => TodayRepository(
+    ref.watch(appDatabaseProvider),
+    notificationScheduler: ref.watch(notificationSchedulerProvider),
+  ),
 );
 
 final todayControllerProvider = Provider<TodayController>(

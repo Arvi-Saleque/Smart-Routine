@@ -7,6 +7,8 @@ import 'package:routine_os/core/enums/priority_level.dart';
 import 'package:routine_os/core/enums/routine_status.dart';
 import 'package:routine_os/core/enums/routine_type.dart';
 import 'package:routine_os/core/enums/skip_reason.dart';
+import 'package:routine_os/core/notifications/notification_scheduler.dart';
+import 'package:routine_os/core/utils/date_time_utils.dart';
 import 'package:routine_os/features/routines/data/routine_repository.dart';
 import 'package:routine_os/features/today/data/today_repository.dart';
 
@@ -14,11 +16,16 @@ void main() {
   late AppDatabase database;
   late RoutineRepository routineRepository;
   late TodayRepository todayRepository;
+  late _FakeRoutineNotificationScheduler scheduler;
 
   setUp(() {
     database = AppDatabase(NativeDatabase.memory());
+    scheduler = _FakeRoutineNotificationScheduler();
     routineRepository = RoutineRepository(database);
-    todayRepository = TodayRepository(database);
+    todayRepository = TodayRepository(
+      database,
+      notificationScheduler: scheduler,
+    );
   });
 
   tearDown(() async {
@@ -302,4 +309,126 @@ void main() {
       expect(savedScores, isEmpty);
     },
   );
+
+  test('markCompleted triggers current-day reminder cancellation', () async {
+    final date = DateTime.now();
+    final routineId = await _createRoutineForDate(
+      routineRepository,
+      date: date,
+      title: 'Completion cancellation',
+    );
+
+    final timeline = await todayRepository.getTimelineForDate(
+      date,
+      now: DateTime(date.year, date.month, date.day, 10, 30),
+    );
+
+    await todayRepository.markCompleted(timeline.entries.single);
+
+    expect(scheduler.cancelledRemaining, hasLength(1));
+    expect(scheduler.cancelledRemaining.single.routineId, routineId);
+    expect(
+      scheduler.cancelledRemaining.single.dateKey,
+      timeline.entries.single.dateKey,
+    );
+  });
+
+  test('markSkipped triggers current-day reminder cancellation', () async {
+    final date = DateTime.now();
+    final routineId = await _createRoutineForDate(
+      routineRepository,
+      date: date,
+      title: 'Skip cancellation',
+    );
+
+    final timeline = await todayRepository.getTimelineForDate(
+      date,
+      now: DateTime(date.year, date.month, date.day, 10, 30),
+    );
+
+    await todayRepository.markSkipped(
+      timeline.entries.single,
+      SkipReason.busy.name,
+    );
+
+    expect(scheduler.cancelledRemaining, hasLength(1));
+    expect(scheduler.cancelledRemaining.single.routineId, routineId);
+    expect(
+      scheduler.cancelledRemaining.single.dateKey,
+      timeline.entries.single.dateKey,
+    );
+  });
+}
+
+Future<String> _createRoutineForDate(
+  RoutineRepository repository, {
+  required DateTime date,
+  required String title,
+}) {
+  return repository.createRoutine(
+    RoutineFormData(
+      title: title,
+      categoryId: 'reading',
+      routineType: RoutineType.fixedTime,
+      goalType: GoalType.duration,
+      targetValue: 30,
+      targetUnit: 'minutes',
+      priority: PriorityLevel.medium,
+      difficulty: DifficultyLevel.normal,
+      startTimeMinutes: 600,
+      endTimeMinutes: 660,
+      repeatDays: {date.weekday},
+      fullDurationMinutes: 60,
+      mediumDurationMinutes: 30,
+      miniDurationMinutes: 10,
+      reminderEnabled: true,
+      timezone: 'Asia/Dhaka',
+    ),
+  );
+}
+
+class _FakeRoutineNotificationScheduler
+    implements RoutineNotificationScheduler {
+  final cancelledRemaining = <_CancellationCall>[];
+
+  @override
+  Future<void> cancelAllRoutineReminders() async {}
+
+  @override
+  Future<void> cancelRemainingTodayReminders(
+    String routineId, {
+    DateTime? now,
+  }) async {
+    cancelledRemaining.add(
+      _CancellationCall(
+        routineId,
+        now == null ? null : DateTimeUtils.dateKey(now),
+      ),
+    );
+  }
+
+  @override
+  Future<void> cancelRoutineReminderType(
+    String routineId,
+    RoutineReminderType type, {
+    DateTime? now,
+  }) async {}
+
+  @override
+  Future<void> cancelRoutineReminders(String routineId) async {}
+
+  @override
+  Future<void> initializeAndReschedule() async {}
+
+  @override
+  Future<void> scheduleRoutineReminders(
+    RoutineReminderSchedule routine,
+  ) async {}
+}
+
+class _CancellationCall {
+  const _CancellationCall(this.routineId, this.dateKey);
+
+  final String routineId;
+  final String? dateKey;
 }

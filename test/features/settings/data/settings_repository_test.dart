@@ -168,6 +168,19 @@ class _FakeRoutineNotificationScheduler
   Future<void> cancelRoutineReminders(String routineId) async {}
 
   @override
+  Future<void> cancelRemainingTodayReminders(
+    String routineId, {
+    DateTime? now,
+  }) async {}
+
+  @override
+  Future<void> cancelRoutineReminderType(
+    String routineId,
+    RoutineReminderType type, {
+    DateTime? now,
+  }) async {}
+
+  @override
   Future<void> initializeAndReschedule() async {}
 
   @override

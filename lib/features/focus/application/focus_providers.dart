@@ -2,11 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/app_database_provider.dart';
+import '../../../core/notifications/notification_providers.dart';
 import '../data/focus_repository.dart';
 import 'focus_controller.dart';
 
 final focusRepositoryProvider = Provider<FocusRepository>(
-  (ref) => FocusRepository(ref.watch(appDatabaseProvider)),
+  (ref) => FocusRepository(
+    ref.watch(appDatabaseProvider),
+    notificationScheduler: ref.watch(notificationSchedulerProvider),
+  ),
 );
 
 final focusControllerProvider = Provider<FocusController>(

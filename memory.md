@@ -188,6 +188,7 @@
 - Theme mode provider test: passed.
 - Settings clear-data test: passed.
 - Routine form validation tests: passed.
+- Reminder action-cancellation tests: passed.
 
 ## Known Issues
 
@@ -235,6 +236,20 @@
 - Stabilized category/unit dropdown values during rebuilds.
 - Added routine repository validation tests for empty title, invalid time range, missing repeat days, simple checks without targets, and target-required goal types.
 - Ran `dart format` for touched files.
+- Ran `flutter analyze`: passed with no issues.
+- Ran `flutter test`: passed.
+
+## Latest Update: Reminder Cancellation After User Actions
+
+- Switched local routine reminder scheduling from indefinite weekly repeats to rolling one-time notifications for the next week.
+- Added date-specific notification IDs while still canceling legacy per-weekday IDs for cleanup compatibility.
+- Added scheduler APIs to cancel one reminder type or the remaining start/late/recovery reminders for a routine date.
+- Wired Today manual complete and skip actions to cancel remaining same-day start/late/recovery reminders.
+- Wired Focus session start and finish, including recovered sessions, to cancel remaining same-day start/late/recovery reminders.
+- Preserved future-day reminders when canceling today's remaining reminders.
+- Updated setup notes to document rolling one-time local reminder scheduling.
+- Added tests for complete, skip, focus start/finish, custom reminder defaults, and future-day reminder preservation.
+- Ran `dart format lib test`.
 - Ran `flutter analyze`: passed with no issues.
 - Ran `flutter test`: passed.
 

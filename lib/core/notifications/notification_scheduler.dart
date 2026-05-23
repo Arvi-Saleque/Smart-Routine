@@ -7,12 +7,23 @@ import '../utils/date_time_utils.dart';
 import 'notification_service.dart';
 import 'notification_settings.dart';
 
+const _rollingScheduleDays = 8;
+const _rollingCancellationDays = 14;
+
 abstract class RoutineNotificationScheduler {
   Future<void> initializeAndReschedule();
 
   Future<void> scheduleRoutineReminders(RoutineReminderSchedule routine);
 
   Future<void> cancelRoutineReminders(String routineId);
+
+  Future<void> cancelRoutineReminderType(
+    String routineId,
+    RoutineReminderType type, {
+    DateTime? now,
+  });
+
+  Future<void> cancelRemainingTodayReminders(String routineId, {DateTime? now});
 
   Future<void> cancelAllRoutineReminders();
 }
@@ -102,21 +113,24 @@ class LocalRoutineNotificationScheduler
       );
     });
 
-    for (final weekday in routine.repeatDays) {
+    for (final scheduledDay in _nextScheduledDays(routine.repeatDays)) {
       for (final rule in reminderRules) {
-        await _notifications.scheduleWeekly(
-          id: notificationIdFor(
+        final scheduledDate = _dateTimeFor(
+          date: scheduledDay,
+          minutesFromMidnight:
+              _baseMinutesFor(rule.type, routine) + rule.minutesOffset,
+        );
+        if (!scheduledDate.isAfter(tz.TZDateTime.now(tz.local))) continue;
+
+        await _notifications.scheduleOneTime(
+          id: notificationIdForDate(
             routineId: routine.routineId,
             type: rule.type,
-            weekday: weekday,
+            date: scheduledDay,
           ),
           title: _titleFor(rule.type, routine.title),
           body: _bodyFor(rule.type, routine),
-          scheduledDate: _nextWeeklyDateTime(
-            weekday: weekday,
-            minutesFromMidnight:
-                _baseMinutesFor(rule.type, routine) + rule.minutesOffset,
-          ),
+          scheduledDate: scheduledDate,
           payload: 'routine:${routine.routineId}:${rule.type.name}',
         );
       }
@@ -127,6 +141,7 @@ class LocalRoutineNotificationScheduler
   Future<void> cancelRoutineReminders(String routineId) async {
     for (final weekday in DateTimeUtils.weekdayShortLabels.keys) {
       for (final rule in _fallbackReminderRules) {
+        // Cancels legacy repeating weekly IDs from older app versions.
         await _notifications.cancel(
           notificationIdFor(
             routineId: routineId,
@@ -136,7 +151,51 @@ class LocalRoutineNotificationScheduler
         );
       }
     }
+    for (final date in _rollingCancellationDates()) {
+      for (final rule in _fallbackReminderRules) {
+        await _notifications.cancel(
+          notificationIdForDate(
+            routineId: routineId,
+            type: rule.type,
+            date: date,
+          ),
+        );
+      }
+    }
     await _deleteReminderRows(routineId);
+  }
+
+  @override
+  Future<void> cancelRoutineReminderType(
+    String routineId,
+    RoutineReminderType type, {
+    DateTime? now,
+  }) async {
+    final date = now ?? DateTime.now();
+    await _notifications.cancel(
+      notificationIdForDate(routineId: routineId, type: type, date: date),
+    );
+    await _notifications.cancel(
+      notificationIdFor(
+        routineId: routineId,
+        type: type,
+        weekday: date.weekday,
+      ),
+    );
+  }
+
+  @override
+  Future<void> cancelRemainingTodayReminders(
+    String routineId, {
+    DateTime? now,
+  }) async {
+    for (final type in const [
+      RoutineReminderType.start,
+      RoutineReminderType.late,
+      RoutineReminderType.recovery,
+    ]) {
+      await cancelRoutineReminderType(routineId, type, now: now);
+    }
   }
 
   @override
@@ -297,6 +356,16 @@ int notificationIdFor({
   return _stablePositiveHash('$routineId|${type.name}|$weekday');
 }
 
+int notificationIdForDate({
+  required String routineId,
+  required RoutineReminderType type,
+  required DateTime date,
+}) {
+  return _stablePositiveHash(
+    '$routineId|${type.name}|${DateTimeUtils.dateKey(date)}',
+  );
+}
+
 int _stablePositiveHash(String value) {
   var hash = 0x811C9DC5;
   for (final codeUnit in value.codeUnits) {
@@ -306,49 +375,40 @@ int _stablePositiveHash(String value) {
   return hash;
 }
 
-tz.TZDateTime _nextWeeklyDateTime({
-  required int weekday,
+List<DateTime> _nextScheduledDays(Set<int> repeatDays) {
+  final today = DateTime.now();
+  final start = DateTime(today.year, today.month, today.day);
+  return [
+    for (var offset = 0; offset < _rollingScheduleDays; offset++)
+      if (repeatDays.contains(start.add(Duration(days: offset)).weekday))
+        start.add(Duration(days: offset)),
+  ];
+}
+
+List<DateTime> _rollingCancellationDates() {
+  final today = DateTime.now();
+  final start = DateTime(today.year, today.month, today.day);
+  return [
+    for (var offset = 0; offset < _rollingCancellationDays; offset++)
+      start.add(Duration(days: offset)),
+  ];
+}
+
+tz.TZDateTime _dateTimeFor({
+  required DateTime date,
   required int minutesFromMidnight,
 }) {
-  final adjusted = _adjustWeekdayAndMinutes(
-    weekday: weekday,
-    minutesFromMidnight: minutesFromMidnight,
-  );
-  final now = tz.TZDateTime.now(tz.local);
-  var scheduledDate = tz.TZDateTime(
+  final adjusted = DateTime(
+    date.year,
+    date.month,
+    date.day,
+  ).add(Duration(minutes: minutesFromMidnight));
+  return tz.TZDateTime(
     tz.local,
-    now.year,
-    now.month,
-    now.day,
-    adjusted.minutesFromMidnight ~/ 60,
-    adjusted.minutesFromMidnight % 60,
+    adjusted.year,
+    adjusted.month,
+    adjusted.day,
+    adjusted.hour,
+    adjusted.minute,
   );
-
-  while (scheduledDate.weekday != adjusted.weekday ||
-      scheduledDate.isBefore(now)) {
-    scheduledDate = scheduledDate.add(const Duration(days: 1));
-  }
-
-  return scheduledDate;
 }
-
-({int weekday, int minutesFromMidnight}) _adjustWeekdayAndMinutes({
-  required int weekday,
-  required int minutesFromMidnight,
-}) {
-  var adjustedWeekday = weekday;
-  var adjustedMinutes = minutesFromMidnight;
-
-  while (adjustedMinutes < 0) {
-    adjustedMinutes += _minutesPerDay;
-    adjustedWeekday = adjustedWeekday == 1 ? 7 : adjustedWeekday - 1;
-  }
-  while (adjustedMinutes >= _minutesPerDay) {
-    adjustedMinutes -= _minutesPerDay;
-    adjustedWeekday = adjustedWeekday == 7 ? 1 : adjustedWeekday + 1;
-  }
-
-  return (weekday: adjustedWeekday, minutesFromMidnight: adjustedMinutes);
-}
-
-const _minutesPerDay = 24 * 60;

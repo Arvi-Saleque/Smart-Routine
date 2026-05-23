@@ -214,7 +214,7 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> {
   VoidCallback? _primaryAction(RoutineDetail detail) {
     if (_saving) return null;
     return switch (_status) {
-      _FocusTimerStatus.idle => _start,
+      _FocusTimerStatus.idle => () => _start(detail),
       _FocusTimerStatus.running ||
       _FocusTimerStatus.paused => () => _finish(detail),
       _FocusTimerStatus.finished => null,
@@ -243,14 +243,20 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> {
         _status == _FocusTimerStatus.paused;
   }
 
-  void _start() {
+  void _start(RoutineDetail detail) {
+    final startedAt = DateTime.now();
     setState(() {
-      _startedAt = DateTime.now();
+      _startedAt = startedAt;
       _runningSince = _startedAt;
       _elapsedBeforeCurrentRun = Duration.zero;
       _elapsed = Duration.zero;
       _status = _FocusTimerStatus.running;
     });
+    unawaited(
+      ref
+          .read(focusControllerProvider)
+          .startSession(detail, startedAt: startedAt),
+    );
     _startTicker();
   }
 

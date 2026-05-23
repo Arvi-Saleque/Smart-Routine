@@ -45,6 +45,19 @@ class _NoopRoutineNotificationScheduler
   Future<void> cancelAllRoutineReminders() async {}
 
   @override
+  Future<void> cancelRemainingTodayReminders(
+    String routineId, {
+    DateTime? now,
+  }) async {}
+
+  @override
+  Future<void> cancelRoutineReminderType(
+    String routineId,
+    RoutineReminderType type, {
+    DateTime? now,
+  }) async {}
+
+  @override
   Future<void> initializeAndReschedule() async {}
 
   @override
