@@ -7,6 +7,7 @@
 - The MVP target is an offline-first Android Flutter app using Riverpod, go_router, Drift SQLite, local notifications, fl_chart, and table_calendar.
 - Phase 2 Drift database foundation is implemented.
 - Phase 3 Routine CRUD is implemented.
+- Phase 4 Today Timeline is implemented.
 
 ## Completed
 
@@ -38,6 +39,13 @@
 - Added form validation for title, category, time range, repeat days, target value, and full/medium/mini duration order.
 - Added shared date/time and recurrence utilities for schedule formatting and repeat-day handling.
 - Added a repository test covering create, update, pause, and delete behavior.
+- Connected Today screen to real routines scheduled for the current weekday.
+- Implemented Today timeline merging scheduled routines with routine logs.
+- Added status detection for upcoming, active, missed, completed, and skipped routines.
+- Added complete and skip actions that write local routine logs.
+- Added skip reason selection dialog.
+- Added active routine, next routine, timeline list, and daily progress summary from local data.
+- Added a Today repository test covering scheduled routine loading, completion logs, and skip logs.
 
 ## Commands Run
 
@@ -56,6 +64,10 @@
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
 
 ## Verification
 
@@ -64,13 +76,14 @@
 - `flutter build apk --debug`: passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
 - Database seed test: passed.
 - Routine repository CRUD test: passed.
+- Today repository timeline/log test: passed.
 
 ## Known Issues
 
 - Package resolver reports newer incompatible package versions are available. This is informational and does not block the build.
 - `build_runner` reports that `--delete-conflicting-outputs` was ignored because the installed version no longer uses that option.
-- Today timeline still uses placeholder data and will be connected in Phase 4.
 - Local reminder scheduling, analytics logic, focus timer behavior, and Smart Coach rules are intentionally not implemented yet.
+- Today timeline uses a simple progress percentage from completion logs. The formal daily productivity score table is still for the Daily Score phase.
 
 ## Important Rules
 
@@ -82,10 +95,10 @@
 
 ## Next Recommended Step
 
-Begin Phase 4: Today Timeline.
+Begin Phase 5: Focus Session.
 
-- Load routines scheduled for the current date.
-- Merge routines with routine logs.
-- Detect upcoming, active, completed, skipped, and missed states.
-- Render real timeline cards on Today screen.
-- Implement complete and skip actions for today.
+- Implement real focus timer state.
+- Save focus sessions to Drift.
+- Connect `/focus/:routineId` to routine data.
+- Let users start, pause, resume, finish, add distraction count, and save notes.
+- Update or create routine logs with actual duration when focus finishes.

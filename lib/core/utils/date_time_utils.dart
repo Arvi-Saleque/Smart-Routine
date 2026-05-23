@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 class DateTimeUtils {
   const DateTimeUtils._();
 
+  static String dateKey(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
   static int timeOfDayToMinutes(TimeOfDay time) {
     return time.hour * 60 + time.minute;
   }
