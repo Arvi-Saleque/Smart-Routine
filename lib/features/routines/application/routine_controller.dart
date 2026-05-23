@@ -1,0 +1,3 @@
+class RoutineController {
+  const RoutineController();
+}

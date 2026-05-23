@@ -1,0 +1,3 @@
+class TodayRepository {
+  const TodayRepository();
+}

@@ -1,0 +1,3 @@
+class AnalyticsController {
+  const AnalyticsController();
+}

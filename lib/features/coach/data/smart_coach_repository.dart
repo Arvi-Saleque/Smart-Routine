@@ -1,0 +1,3 @@
+class SmartCoachRepository {
+  const SmartCoachRepository();
+}

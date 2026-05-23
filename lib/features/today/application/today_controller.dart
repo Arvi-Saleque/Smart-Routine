@@ -1,0 +1,3 @@
+class TodayController {
+  const TodayController();
+}

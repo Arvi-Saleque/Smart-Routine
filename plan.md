@@ -1228,6 +1228,213 @@ Layout:
 
 ## 18. Implementation Phases
 
+before implement phase 1 check the following commands
+
+You are working on the RoutineOS Flutter project.
+
+Use the attached master plan as the product specification, but implement only Phase 1 now.
+
+Goal:
+Create a clean compiling Flutter app shell with architecture, routing, theme, enums, shared widgets, and placeholder screens.
+
+Do NOT implement database logic, reminders, analytics logic, focus timer logic, or Smart Coach logic yet.
+
+Tasks:
+
+1. Inspect the current Flutter project structure.
+
+2. Add these dependencies to pubspec.yaml:
+   - flutter_riverpod
+   - go_router
+   - drift
+   - sqlite3_flutter_libs
+   - path_provider
+   - path
+   - shared_preferences
+   - flutter_local_notifications
+   - timezone
+   - intl
+   - uuid
+   - fl_chart
+   - table_calendar
+
+3. Add these dev dependencies:
+   - build_runner
+   - drift_dev
+   - flutter_lints
+
+4. Create the feature-first folder structure:
+
+lib/
+  app/
+  core/
+  shared/
+  features/
+
+Inside those folders, create the subfolders from the master plan.
+
+5. Create enum files:
+
+lib/core/enums/routine_type.dart
+lib/core/enums/goal_type.dart
+lib/core/enums/routine_status.dart
+lib/core/enums/priority_level.dart
+lib/core/enums/difficulty_level.dart
+lib/core/enums/skip_reason.dart
+
+Enums:
+
+RoutineType:
+- fixedTime
+- flexible
+- durationBased
+- countBased
+
+GoalType:
+- simpleCheck
+- duration
+- count
+- quantity
+
+RoutineStatus:
+- upcoming
+- active
+- started
+- completed
+- skipped
+- missed
+- rescheduled
+- recovered
+
+PriorityLevel:
+- low
+- medium
+- high
+
+DifficultyLevel:
+- easy
+- normal
+- hard
+
+SkipReason:
+- tooTired
+- busy
+- forgot
+- badTiming
+- notInterested
+- emergency
+- overplanned
+- other
+
+6. Create app theme:
+
+lib/app/theme.dart
+
+Requirements:
+- Material 3
+- Light theme
+- Dark theme
+- Clean productivity style
+- Soft card radius
+- Consistent spacing
+- Do not use childish colors
+- Use ColorScheme properly
+
+7. Create router:
+
+lib/app/router.dart
+
+Use go_router with these routes:
+
+- /
+- /routines
+- /routine/create
+- /routine/:id
+- /routine/:id/edit
+- /focus/:routineId
+- /calendar
+- /analytics
+- /coach
+- /settings
+
+8. Create app root:
+
+lib/app/app.dart
+
+Requirements:
+- Use MaterialApp.router
+- Use router from app/router.dart
+- Use light and dark theme
+- Default theme mode can be system for now
+
+9. Update main.dart:
+
+Requirements:
+- Wrap app with ProviderScope
+- Run RoutineOSApp
+
+10. Create placeholder screens:
+
+TodayScreen
+RoutineListScreen
+RoutineFormScreen
+RoutineDetailScreen
+FocusSessionScreen
+CalendarScreen
+AnalyticsScreen
+SmartCoachScreen
+SettingsScreen
+
+Important:
+- Placeholder screens must look clean.
+- They should not be empty white pages.
+- They should show title, short description, and navigation where useful.
+- Do not add fake business data.
+
+11. Create shared widgets:
+
+AppScaffold
+PrimaryButton
+EmptyState
+SectionHeader
+RoutineCard
+ScoreCard
+CategoryChip
+
+For now, these can be reusable UI shells. Keep them clean and simple.
+
+12. Add AGENTS.md in the project root with these instructions:
+
+- Offline-first Flutter app
+- No paid backend in MVP
+- No Firebase/Supabase in MVP
+- No paid AI APIs
+- Use Riverpod, go_router, Drift, SQLite
+- Use feature-first clean architecture
+- Keep UI separate from data/database logic
+- Run flutter analyze after changes
+- Do not leave broken imports
+
+13. Add SETUP_NOTES.md with notes:
+- Android 13+ notification permission will be required later.
+- Android 12+ exact alarm behavior must be handled carefully later.
+- Drift generated files require build_runner.
+- Firebase is intentionally not included in MVP.
+
+14. Run:
+flutter pub get
+flutter analyze
+
+15. Fix all analyzer errors.
+
+Acceptance criteria:
+- App compiles.
+- All routes exist.
+- All imports are valid.
+- No analyzer errors.
+- Screens are clean placeholders.
+- No database/reminder/business logic is implemented yet.
+
 ### Phase 1: Project Setup and Architecture
 
 Goal:

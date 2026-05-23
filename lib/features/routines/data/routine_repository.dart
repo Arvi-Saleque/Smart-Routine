@@ -1,0 +1,3 @@
+class RoutineRepository {
+  const RoutineRepository();
+}

@@ -2,9 +2,8 @@
 
 ## Current State
 
-- Repository contains product planning documents for RoutineOS.
+- Repository contains an Android-first Flutter project for RoutineOS.
 - `plan.md` defines the detailed implementation plan.
-- The first coding milestone has not been implemented yet.
 - The MVP target is an offline-first Android Flutter app using Riverpod, go_router, Drift SQLite, local notifications, fl_chart, and table_calendar.
 
 ## Completed
@@ -13,6 +12,38 @@
 - Added repository instructions in `instruction.md`.
 - Added initial project README.
 - Added Flutter-focused `.gitignore`.
+- Implemented Phase 1 project setup and architecture.
+- Scaffolded Android Flutter project with project name `routine_os`.
+- Added required runtime dependencies and dev dependencies.
+- Added app root, Material 3 light/dark theme, and go_router route map.
+- Added clean placeholder screens for Today, Routines, Routine Form, Routine Detail, Focus, Calendar, Analytics, Smart Coach, and Settings.
+- Added shared UI shells: `AppScaffold`, `PrimaryButton`, `EmptyState`, `SectionHeader`, `RoutineCard`, `ScoreCard`, and `CategoryChip`.
+- Added core enums for routine type, goal type, routine status, priority, difficulty, and skip reason.
+- Added feature-first application/data placeholder classes and providers.
+- Added `AGENTS.md` and `SETUP_NOTES.md`.
+- Enabled Android core library desugaring for `flutter_local_notifications`.
+- Configured Kotlin compilation in-process to avoid Windows incremental-cache noise.
+
+## Commands Run
+
+- `flutter create --platforms=android --project-name routine_os --org com.routineos .`
+- `flutter pub add flutter_riverpod go_router drift sqlite3_flutter_libs path_provider path shared_preferences flutter_local_notifications timezone intl uuid fl_chart table_calendar`
+- `flutter pub add --dev build_runner drift_dev flutter_lints`
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+- `flutter clean; flutter pub get; flutter build apk --debug`
+
+## Verification
+
+- `flutter analyze`: passed with no issues.
+- `flutter test`: passed.
+- `flutter build apk --debug`: passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
+
+## Known Issues
+
+- Package resolver reports newer incompatible package versions are available. This is informational and does not block the build.
+- Full database, notifications, analytics, focus timer, and Smart Coach logic are intentionally not implemented yet.
 
 ## Important Rules
 
@@ -24,11 +55,11 @@
 
 ## Next Recommended Step
 
-Create the Flutter project architecture for RoutineOS:
+Begin Phase 2: Drift database foundation.
 
-- Scaffold Android-first Flutter project.
-- Add required dependencies.
-- Create folder structure.
-- Add app router, theme, enums, shared widgets, and clean placeholder screens.
-- Run `flutter analyze`.
-
+- Add Drift table definitions for categories, routines, schedules, logs, focus sessions, reminders, and daily scores.
+- Create `AppDatabase`.
+- Add database provider.
+- Add default category seed logic.
+- Run code generation.
+- Run `flutter analyze`, `flutter test`, and an Android debug build.

@@ -1,0 +1,3 @@
+class FocusRepository {
+  const FocusRepository();
+}
