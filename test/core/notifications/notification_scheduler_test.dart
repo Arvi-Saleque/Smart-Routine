@@ -60,7 +60,7 @@ void main() {
     );
   });
 
-  test('cancels reminders when routine is not schedulable', () async {
+  test('flexible routine schedules no reminders', () async {
     await scheduler.scheduleRoutineReminders(
       const RoutineReminderSchedule(
         routineId: 'routine-2',
@@ -110,6 +110,89 @@ void main() {
     expect(notifications.scheduled, isEmpty);
     expect(reminders, isEmpty);
   });
+
+  test(
+    'cancellation removes reminder rows and cancels notification ids',
+    () async {
+      await _insertRoutine(database, routineId: 'routine-4');
+      await scheduler.scheduleRoutineReminders(
+        const RoutineReminderSchedule(
+          routineId: 'routine-4',
+          title: 'Read Bangla',
+          routineType: 'fixedTime',
+          targetSummary: '20 pages',
+          startTimeMinutes: 1320,
+          endTimeMinutes: 1380,
+          repeatDays: {1},
+          fullDurationMinutes: 60,
+          miniDurationMinutes: 10,
+          isActive: true,
+          reminderEnabled: true,
+        ),
+      );
+
+      notifications.clearCalls();
+      await scheduler.cancelRoutineReminders('routine-4');
+
+      final reminders = await database.select(database.reminders).get();
+
+      expect(reminders, isEmpty);
+      expect(notifications.calls, hasLength(28));
+      expect(
+        notifications.calls.every((call) => call.type == 'cancel'),
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'rescheduling cancels old ids before scheduling new reminders',
+    () async {
+      await _insertRoutine(database, routineId: 'routine-5');
+      const firstSchedule = RoutineReminderSchedule(
+        routineId: 'routine-5',
+        title: 'Read Bangla',
+        routineType: 'fixedTime',
+        targetSummary: '20 pages',
+        startTimeMinutes: 1320,
+        endTimeMinutes: 1380,
+        repeatDays: {1},
+        fullDurationMinutes: 60,
+        miniDurationMinutes: 10,
+        isActive: true,
+        reminderEnabled: true,
+      );
+
+      await scheduler.scheduleRoutineReminders(firstSchedule);
+      notifications.clearCalls();
+
+      await scheduler.scheduleRoutineReminders(
+        const RoutineReminderSchedule(
+          routineId: 'routine-5',
+          title: 'Read Bangla',
+          routineType: 'fixedTime',
+          targetSummary: '20 pages',
+          startTimeMinutes: 1380,
+          endTimeMinutes: 1440,
+          repeatDays: {2},
+          fullDurationMinutes: 60,
+          miniDurationMinutes: 10,
+          isActive: true,
+          reminderEnabled: true,
+        ),
+      );
+
+      expect(notifications.calls, hasLength(32));
+      expect(
+        notifications.calls.take(28).every((call) => call.type == 'cancel'),
+        isTrue,
+      );
+      expect(
+        notifications.calls.skip(28).every((call) => call.type == 'schedule'),
+        isTrue,
+      );
+    },
+  );
 }
 
 Future<void> _insertRoutine(
@@ -145,10 +228,18 @@ class _FakeNotificationGateway implements NotificationGateway {
   int initializeCalls = 0;
   final scheduled = <int>[];
   final cancelled = <int>[];
+  final calls = <_NotificationCall>[];
+
+  void clearCalls() {
+    calls.clear();
+    scheduled.clear();
+    cancelled.clear();
+  }
 
   @override
   Future<void> cancel(int id) async {
     cancelled.add(id);
+    calls.add(_NotificationCall('cancel', id));
   }
 
   @override
@@ -166,7 +257,15 @@ class _FakeNotificationGateway implements NotificationGateway {
     required String payload,
   }) async {
     scheduled.add(id);
+    calls.add(_NotificationCall('schedule', id));
   }
+}
+
+class _NotificationCall {
+  const _NotificationCall(this.type, this.id);
+
+  final String type;
+  final int id;
 }
 
 class _FakeNotificationSettingsStore implements NotificationSettingsStore {

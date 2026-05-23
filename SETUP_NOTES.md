@@ -3,14 +3,16 @@
 ## Android Notifications
 
 - Android 13 and newer require runtime notification permission before reminders can appear.
-- Android 12 and newer have exact alarm behavior that must be handled carefully when scheduling precise routine reminders.
-- The first architecture milestone only adds notification dependencies. Reminder initialization and permissions will be implemented in the local reminders phase.
+- Android 13 and newer show a runtime notification permission prompt. If the user denies permission, RoutineOS keeps running and does not schedule local reminders.
+- RoutineOS uses local scheduled notifications only. It does not use Firebase, cloud push notifications, or a remote backend.
+- RoutineOS uses inexact local reminder scheduling for the MVP. This avoids requiring exact alarm permission while still allowing Android to deliver reminders in a battery-aware way.
+- Android 12 and newer restrict exact alarms. If exact minute-level reminders are added later, the app must add `SCHEDULE_EXACT_ALARM`, request/guide the user through exact alarm access, and document the behavior.
 - `flutter_local_notifications` requires Android core library desugaring, which is enabled in `android/app/build.gradle.kts`.
 - Kotlin compilation is configured to run in-process to avoid Windows incremental-cache noise when dependencies live outside the project drive.
-- Routine reminders now request notification permission at runtime and declare Android notification/exact alarm permissions in the manifest.
+- Routine reminders request notification permission at runtime and declare scheduled-notification receivers plus boot-completed permission in the manifest so reminders can survive reboot/package replacement.
 - MVP reminder timezone defaults to `Asia/Dhaka`; proper device timezone detection can be added later with a dedicated timezone plugin.
 - For manual Android testing, install the debug APK, grant notification permission on first launch, and verify the Settings reminder toggle can pause and restore scheduled routine reminders.
-- Some Android versions require users to allow exact alarms in system settings before precise reminders fire at the requested minute.
+- Some OEM Android builds may delay or block scheduled alarms while the app is in the background, especially when battery saver or aggressive app standby modes are enabled.
 
 ## Drift
 

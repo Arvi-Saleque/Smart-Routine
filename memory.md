@@ -96,6 +96,10 @@
 - Added `AppDatabase.clearUserData()` as the single local reset path.
 - Expanded Android setup notes with manual APK testing steps and exact alarm permission guidance.
 - Added a database reset test covering user-data clearing and category preservation.
+- Fixed Android local notification setup for scheduled reminders: added scheduled notification receivers and boot-completed permission, removed exact alarm permission for MVP inexact scheduling, and kept the app offline-first with no cloud push/Firebase.
+- Switched routine reminders from exact scheduling to `AndroidScheduleMode.inexactAllowWhileIdle`.
+- Hardened notification permission handling so denied Android notification permission returns cleanly without scheduling or crashing.
+- Expanded notification scheduler tests for flexible routine no-op behavior, global disable behavior, cancellation, and rescheduling order.
 
 ## Commands Run
 
@@ -105,6 +109,10 @@
 - `dart format lib test`
 - `flutter analyze`
 - `flutter test`
+- `dart format lib/core/notifications test/core/notifications android/app/src/main/AndroidManifest.xml` (XML path was rejected by Dart formatter; Dart notification files were formatted)
+- `flutter analyze`
+- `flutter test`
+- `flutter build apk --debug`
 - `flutter clean; flutter pub get; flutter build apk --debug`
 - `flutter pub run build_runner build --delete-conflicting-outputs`
 - `flutter analyze`
@@ -167,6 +175,7 @@
 - Analytics repository tests: passed.
 - Smart Coach tests: passed.
 - Local data reset test: passed.
+- Android local notification scheduler tests: passed.
 
 ## Known Issues
 

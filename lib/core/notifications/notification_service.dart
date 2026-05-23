@@ -22,6 +22,7 @@ class LocalNotificationService implements NotificationGateway {
 
   final FlutterLocalNotificationsPlugin _plugin;
   bool _initialized = false;
+  bool _permissionGranted = true;
 
   static const _channelId = 'routine_reminders';
   static const _channelName = 'Routine reminders';
@@ -29,7 +30,7 @@ class LocalNotificationService implements NotificationGateway {
 
   @override
   Future<bool> initialize() async {
-    if (_initialized) return true;
+    if (_initialized) return _permissionGranted;
 
     tzdata.initializeTimeZones();
     _setFallbackLocalLocation();
@@ -46,16 +47,21 @@ class LocalNotificationService implements NotificationGateway {
       macOS: darwinSettings,
     );
 
-    await _plugin.initialize(settings: settings);
-    _initialized = true;
+    try {
+      await _plugin.initialize(settings: settings);
+      _initialized = true;
 
-    final android = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    final permissionGranted =
-        await android?.requestNotificationsPermission() ?? true;
-    return permissionGranted;
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      _permissionGranted =
+          await android?.requestNotificationsPermission() ?? true;
+      return _permissionGranted;
+    } catch (_) {
+      _permissionGranted = false;
+      return false;
+    }
   }
 
   @override
@@ -82,7 +88,7 @@ class LocalNotificationService implements NotificationGateway {
         iOS: DarwinNotificationDetails(),
         macOS: DarwinNotificationDetails(),
       ),
-      androidScheduleMode: AndroidScheduleMode.exact,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       payload: payload,
     );
