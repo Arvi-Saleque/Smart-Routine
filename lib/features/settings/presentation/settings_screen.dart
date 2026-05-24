@@ -24,7 +24,7 @@ class SettingsScreen extends ConsumerWidget {
         );
     final startOfWeek = ref
         .watch(startOfWeekProvider)
-        .maybeWhen(data: (value) => value, orElse: () => StartOfWeek.monday);
+        .maybeWhen(data: (value) => value, orElse: () => StartOfWeek.saturday);
     final controller = ref.read(settingsControllerProvider);
 
     return AppScaffold(

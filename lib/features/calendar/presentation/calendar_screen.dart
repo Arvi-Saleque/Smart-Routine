@@ -55,7 +55,7 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
     final selectedDay = _selectedDay;
     final startOfWeek = ref
         .watch(startOfWeekProvider)
-        .maybeWhen(data: (value) => value, orElse: () => StartOfWeek.monday);
+        .maybeWhen(data: (value) => value, orElse: () => StartOfWeek.saturday);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -165,7 +165,7 @@ class _CalendarPanel extends StatelessWidget {
               focusedDay: focusedDay,
               startingDayOfWeek: startOfWeek == StartOfWeek.sunday
                   ? StartingDayOfWeek.sunday
-                  : StartingDayOfWeek.monday,
+                  : StartingDayOfWeek.saturday,
               selectedDayPredicate: (day) => isSameDay(day, selectedDay),
               availableCalendarFormats: const {CalendarFormat.month: 'Month'},
               calendarFormat: CalendarFormat.month,

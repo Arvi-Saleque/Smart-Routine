@@ -127,7 +127,7 @@ class SettingsRepository {
   StartOfWeek _startOfWeekFromName(String? name) {
     return switch (name) {
       'sunday' => StartOfWeek.sunday,
-      _ => StartOfWeek.monday,
+      _ => StartOfWeek.saturday,
     };
   }
 
@@ -135,7 +135,7 @@ class SettingsRepository {
 }
 
 enum StartOfWeek {
-  monday('Monday'),
+  saturday('Saturday'),
   sunday('Sunday');
 
   const StartOfWeek(this.label);

@@ -47,6 +47,13 @@ void main() {
     expect(reminders.defaultLateReminderMinutes, 20);
   });
 
+  test('start of week defaults to Saturday', () async {
+    final repository = SettingsRepository();
+    addTearDown(repository.dispose);
+
+    expect(await repository.startOfWeek(), StartOfWeek.saturday);
+  });
+
   test('theme mode provider returns selected value', () async {
     final container = ProviderContainer(
       overrides: [

@@ -333,3 +333,12 @@ Manual APK testing and follow-up polish.
 - Ran `flutter analyze`: passed with no issues.
 - Ran `flutter test`: passed with all 45 tests green.
 - Ran `flutter build apk --debug`: passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
+
+## Latest Update: Start Of Week Options
+
+- Changed start-of-week settings to offer Saturday and Sunday only.
+- Set Saturday as the default/fallback start of week instead of Monday.
+- Updated Calendar to use Saturday when the setting is Saturday or unavailable.
+- Added a settings repository regression test for the Saturday default.
+- Ran `flutter analyze`: passed with no issues.
+- Ran targeted settings and calendar tests: passed.
