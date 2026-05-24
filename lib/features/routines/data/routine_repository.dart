@@ -41,7 +41,7 @@ class RoutineRepository {
             ),
           ),
         ])..orderBy([
-          OrderingTerm.asc(_database.routines.isActive),
+          OrderingTerm.desc(_database.routines.isActive),
           OrderingTerm.asc(_database.routines.title),
         ]);
 

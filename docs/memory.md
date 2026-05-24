@@ -190,6 +190,7 @@
 - Routine form validation tests: passed.
 - Reminder action-cancellation tests: passed.
 - Release-prep clean pipeline: passed.
+- Final hardening pass tests: passed.
 
 ## Known Issues
 
@@ -268,6 +269,23 @@
 - Ran `flutter analyze`: passed with no issues.
 - Ran `flutter test`: passed.
 - Ran `flutter build apk --debug`: passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
+
+## Latest Update: Final APK Hardening
+
+- Ran the requested clean baseline: `flutter clean`, `flutter pub get`, `dart run build_runner build --delete-conflicting-outputs`, `flutter analyze`, and `flutter test`.
+- Added specific-date support to `RoutineReminderSchedule` so one-time schedule rows can receive local reminders.
+- Kept weekly routines on rolling 8-day reminder scheduling and skipped reminder scheduling for past specific dates.
+- Wired `moveToTomorrow` to request a one-time specific-date reminder schedule for the moved routine without replacing weekly reminders.
+- Added Android notification status icon resource at `android/app/src/main/res/drawable/ic_stat_routine.xml`.
+- Switched Android notification initialization from launcher icon to `ic_stat_routine`.
+- Changed routine list ordering to active routines first.
+- Added a comment explaining shared reminder SharedPreferences keys across settings classes.
+- Added `android/local.properties` to `.gitignore`.
+- Added tests for tomorrow specific-date reminders, past specific-date no-op behavior, active-first routine ordering, and move-to-tomorrow reminder scheduling.
+- Ran final `flutter analyze`: passed with no issues.
+- Ran final `flutter test`: passed.
+- Ran final `flutter build apk --debug`: passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
+- Removed regenerated local machine metadata after the build: `.dart_tool/`, `.flutter-plugins-dependencies`, `android/.gradle/`, `android/.kotlin/`, and `android/local.properties`.
 
 ## Important Rules
 

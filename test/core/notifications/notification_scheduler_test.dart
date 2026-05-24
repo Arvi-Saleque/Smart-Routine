@@ -61,6 +61,76 @@ void main() {
     );
   });
 
+  test('specificDate schedule can schedule reminders for tomorrow', () async {
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    final tomorrowKey = _dateKey(tomorrow);
+    await _insertRoutine(database, routineId: 'routine-specific');
+    await _insertSchedule(
+      database,
+      routineId: 'routine-specific',
+      specificDate: tomorrowKey,
+      repeatDays: '',
+    );
+    final row = await (database.select(database.routines).join([
+      innerJoin(
+        database.routineSchedules,
+        database.routineSchedules.routineId.equalsExp(database.routines.id),
+      ),
+    ])..where(database.routines.id.equals('routine-specific'))).getSingle();
+
+    await scheduler.scheduleRoutineReminders(
+      RoutineReminderSchedule.fromDatabase(
+        routine: row.readTable(database.routines),
+        schedule: row.readTable(database.routineSchedules),
+      ),
+    );
+
+    expect(notifications.scheduled, hasLength(4));
+    expect(
+      notifications.scheduled,
+      contains(
+        notificationIdForDate(
+          routineId: 'routine-specific',
+          type: RoutineReminderType.start,
+          date: tomorrow,
+        ),
+      ),
+    );
+    expect(
+      notifications.scheduledDates.values.every(
+        (date) => _dateKey(date) == tomorrowKey,
+      ),
+      isTrue,
+    );
+  });
+
+  test('past specificDate schedule does not schedule reminders', () async {
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    await _insertRoutine(database, routineId: 'routine-past-specific');
+
+    await scheduler.scheduleRoutineReminders(
+      RoutineReminderSchedule(
+        routineId: 'routine-past-specific',
+        title: 'Past routine',
+        routineType: 'fixedTime',
+        targetSummary: '20 pages',
+        startTimeMinutes: 720,
+        endTimeMinutes: 780,
+        repeatDays: const {},
+        specificDate: _dateKey(yesterday),
+        fullDurationMinutes: 60,
+        miniDurationMinutes: 10,
+        isActive: true,
+        reminderEnabled: true,
+      ),
+    );
+
+    final reminders = await database.select(database.reminders).get();
+
+    expect(notifications.scheduled, isEmpty);
+    expect(reminders, isEmpty);
+  });
+
   test('uses stored preparation and late reminder defaults', () async {
     final repeatDays = _futureWeekdays(1);
     settings.preparationMinutes = 20;
@@ -297,6 +367,12 @@ Set<int> _futureWeekdays(int count, {int startOffset = 1}) {
   };
 }
 
+String _dateKey(DateTime date) {
+  return '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+}
+
 Future<void> _insertRoutine(
   AppDatabase database, {
   required String routineId,
@@ -326,9 +402,34 @@ Future<void> _insertRoutine(
       );
 }
 
+Future<void> _insertSchedule(
+  AppDatabase database, {
+  required String routineId,
+  required String repeatDays,
+  String? specificDate,
+}) async {
+  final now = DateTime.now();
+  await database
+      .into(database.routineSchedules)
+      .insert(
+        RoutineSchedulesCompanion.insert(
+          id: 'schedule-$routineId',
+          routineId: routineId,
+          startTimeMinutes: 720,
+          endTimeMinutes: 780,
+          repeatDays: repeatDays,
+          specificDate: Value(specificDate),
+          timezone: 'Asia/Dhaka',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+}
+
 class _FakeNotificationGateway implements NotificationGateway {
   int initializeCalls = 0;
   final scheduled = <int>[];
+  final scheduledDates = <int, DateTime>{};
   final cancelled = <int>[];
   final active = <int>{};
   final calls = <_NotificationCall>[];
@@ -336,6 +437,7 @@ class _FakeNotificationGateway implements NotificationGateway {
   void clearCalls() {
     calls.clear();
     scheduled.clear();
+    scheduledDates.clear();
     cancelled.clear();
     active.clear();
   }
@@ -362,6 +464,7 @@ class _FakeNotificationGateway implements NotificationGateway {
     required String payload,
   }) async {
     scheduled.add(id);
+    scheduledDates[id] = scheduledDate;
     active.add(id);
     calls.add(_NotificationCall('schedule', id));
   }

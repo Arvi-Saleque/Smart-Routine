@@ -163,6 +163,26 @@ void main() {
       );
     }
   });
+
+  test(
+    'routine list orders active routines before inactive routines',
+    () async {
+      final inactiveId = await repository.createRoutine(
+        _validFormData(title: 'A inactive routine'),
+      );
+      await repository.setRoutineActive(inactiveId, false);
+      final activeId = await repository.createRoutine(
+        _validFormData(title: 'Z active routine'),
+      );
+
+      final routines = await repository.watchRoutineDetails().first;
+
+      expect(routines.map((detail) => detail.routine.id).take(2), [
+        activeId,
+        inactiveId,
+      ]);
+    },
+  );
 }
 
 RoutineFormData _validFormData({

@@ -35,7 +35,7 @@ class LocalNotificationService implements NotificationGateway {
     tzdata.initializeTimeZones();
     _setFallbackLocalLocation();
 
-    const androidSettings = AndroidInitializationSettings('ic_launcher');
+    const androidSettings = AndroidInitializationSettings('ic_stat_routine');
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,

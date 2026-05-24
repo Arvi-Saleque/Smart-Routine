@@ -226,6 +226,13 @@ void main() {
         tomorrowTimeline.entries.single.detail.routine.title,
         'Single weekday reading',
       );
+      expect(scheduler.scheduled, hasLength(1));
+      expect(
+        scheduler.scheduled.single.routineId,
+        timeline.entries.single.detail.routine.id,
+      );
+      expect(scheduler.scheduled.single.specificDate, '2026-05-19');
+      expect(scheduler.scheduled.single.repeatDays, isEmpty);
     },
   );
 
@@ -390,6 +397,7 @@ Future<String> _createRoutineForDate(
 class _FakeRoutineNotificationScheduler
     implements RoutineNotificationScheduler {
   final cancelledRemaining = <_CancellationCall>[];
+  final scheduled = <RoutineReminderSchedule>[];
 
   @override
   Future<void> cancelAllRoutineReminders() async {}
@@ -421,9 +429,9 @@ class _FakeRoutineNotificationScheduler
   Future<void> initializeAndReschedule() async {}
 
   @override
-  Future<void> scheduleRoutineReminders(
-    RoutineReminderSchedule routine,
-  ) async {}
+  Future<void> scheduleRoutineReminders(RoutineReminderSchedule routine) async {
+    scheduled.add(routine);
+  }
 }
 
 class _CancellationCall {

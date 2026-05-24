@@ -38,6 +38,7 @@ macos/.symlinks/
 .env
 .env.*
 !.env.example
+android/local.properties
 
 # Secrets and signing
 *.jks

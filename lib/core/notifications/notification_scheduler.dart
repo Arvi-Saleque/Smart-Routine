@@ -62,12 +62,21 @@ class LocalRoutineNotificationScheduler
     final enabled = await _notifications.initialize();
     if (!enabled) return;
 
-    final rows = await (_database.select(_database.routines).join([
-      innerJoin(
-        _database.routineSchedules,
-        _database.routineSchedules.routineId.equalsExp(_database.routines.id),
-      ),
-    ])..where(_database.routines.isActive.equals(true))).get();
+    final rows =
+        await (_database.select(_database.routines).join([
+                innerJoin(
+                  _database.routineSchedules,
+                  _database.routineSchedules.routineId.equalsExp(
+                    _database.routines.id,
+                  ),
+                ),
+              ])
+              ..where(_database.routines.isActive.equals(true))
+              ..orderBy([
+                OrderingTerm.asc(_database.routines.id),
+                OrderingTerm.asc(_database.routineSchedules.specificDate),
+              ]))
+            .get();
 
     for (final row in rows) {
       await scheduleRoutineReminders(
@@ -81,10 +90,19 @@ class LocalRoutineNotificationScheduler
 
   @override
   Future<void> scheduleRoutineReminders(RoutineReminderSchedule routine) async {
-    await cancelRoutineReminders(routine.routineId);
+    if (routine.specificDate == null) {
+      await cancelRoutineReminders(routine.routineId);
+    } else {
+      await _cancelSpecificDateReminders(
+        routine.routineId,
+        routine.specificDate!,
+      );
+    }
 
     if (!routine.isSchedulable || !await _remindersEnabled()) {
-      await _deleteReminderRows(routine.routineId);
+      if (routine.specificDate == null) {
+        await _deleteReminderRows(routine.routineId);
+      }
       return;
     }
 
@@ -113,7 +131,7 @@ class LocalRoutineNotificationScheduler
       );
     });
 
-    for (final scheduledDay in _nextScheduledDays(routine.repeatDays)) {
+    for (final scheduledDay in _scheduledDatesFor(routine)) {
       for (final rule in reminderRules) {
         final scheduledDate = _dateTimeFor(
           date: scheduledDay,
@@ -152,6 +170,25 @@ class LocalRoutineNotificationScheduler
       }
     }
     for (final date in _rollingCancellationDates()) {
+      for (final rule in _fallbackReminderRules) {
+        await _notifications.cancel(
+          notificationIdForDate(
+            routineId: routineId,
+            type: rule.type,
+            date: date,
+          ),
+        );
+      }
+    }
+    final specificDates =
+        await (_database.select(_database.routineSchedules)
+              ..where((table) => table.routineId.equals(routineId))
+              ..where((table) => table.specificDate.isNotNull()))
+            .map((schedule) => schedule.specificDate)
+            .get();
+    for (final dateKey in specificDates.whereType<String>()) {
+      final date = DateTime.tryParse(dateKey);
+      if (date == null) continue;
       for (final rule in _fallbackReminderRules) {
         await _notifications.cancel(
           notificationIdForDate(
@@ -244,6 +281,23 @@ class LocalRoutineNotificationScheduler
     )..where((table) => table.routineId.equals(routineId))).go();
   }
 
+  Future<void> _cancelSpecificDateReminders(
+    String routineId,
+    String dateKey,
+  ) async {
+    final date = DateTime.tryParse(dateKey);
+    if (date == null) return;
+    for (final rule in _fallbackReminderRules) {
+      await _notifications.cancel(
+        notificationIdForDate(
+          routineId: routineId,
+          type: rule.type,
+          date: date,
+        ),
+      );
+    }
+  }
+
   int _baseMinutesFor(
     RoutineReminderType type,
     RoutineReminderSchedule routine,
@@ -284,6 +338,7 @@ class RoutineReminderSchedule {
     required this.startTimeMinutes,
     required this.endTimeMinutes,
     required this.repeatDays,
+    this.specificDate,
     required this.fullDurationMinutes,
     required this.miniDurationMinutes,
     required this.isActive,
@@ -308,6 +363,7 @@ class RoutineReminderSchedule {
       startTimeMinutes: schedule.startTimeMinutes,
       endTimeMinutes: schedule.endTimeMinutes,
       repeatDays: DateTimeUtils.decodeRepeatDays(schedule.repeatDays),
+      specificDate: schedule.specificDate,
       fullDurationMinutes: routine.fullDurationMinutes,
       miniDurationMinutes: routine.miniDurationMinutes,
       isActive: routine.isActive,
@@ -322,16 +378,21 @@ class RoutineReminderSchedule {
   final int startTimeMinutes;
   final int endTimeMinutes;
   final Set<int> repeatDays;
+  final String? specificDate;
   final int fullDurationMinutes;
   final int miniDurationMinutes;
   final bool isActive;
   final bool reminderEnabled;
 
   bool get isSchedulable {
+    final specificDate = this.specificDate;
+    final hasSchedulableDate = specificDate == null
+        ? repeatDays.isNotEmpty
+        : !_isPastDateKey(specificDate);
     return isActive &&
         reminderEnabled &&
         routineType == RoutineType.fixedTime.name &&
-        repeatDays.isNotEmpty;
+        hasSchedulableDate;
   }
 }
 
@@ -373,6 +434,29 @@ int _stablePositiveHash(String value) {
     hash = (hash * 0x01000193) & 0x7FFFFFFF;
   }
   return hash;
+}
+
+List<DateTime> _scheduledDatesFor(RoutineReminderSchedule routine) {
+  final specificDate = routine.specificDate;
+  if (specificDate != null) {
+    final date = DateTime.tryParse(specificDate);
+    if (date == null) return const [];
+    final day = DateTime(date.year, date.month, date.day);
+    final today = DateTime.now();
+    final todayOnly = DateTime(today.year, today.month, today.day);
+    if (day.isBefore(todayOnly)) return const [];
+    return [day];
+  }
+  return _nextScheduledDays(routine.repeatDays);
+}
+
+bool _isPastDateKey(String dateKey) {
+  final date = DateTime.tryParse(dateKey);
+  if (date == null) return true;
+  final day = DateTime(date.year, date.month, date.day);
+  final today = DateTime.now();
+  final todayOnly = DateTime(today.year, today.month, today.day);
+  return day.isBefore(todayOnly);
 }
 
 List<DateTime> _nextScheduledDays(Set<int> repeatDays) {

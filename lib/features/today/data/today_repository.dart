@@ -193,6 +193,23 @@ class TodayRepository {
         updatedAt: now,
       );
     });
+
+    await _notificationScheduler?.scheduleRoutineReminders(
+      RoutineReminderSchedule(
+        routineId: entry.detail.routine.id,
+        title: entry.detail.routine.title,
+        routineType: entry.detail.routine.routineType,
+        targetSummary: entry.detail.goalLabel,
+        startTimeMinutes: schedule.startTimeMinutes,
+        endTimeMinutes: schedule.endTimeMinutes,
+        repeatDays: const {},
+        specificDate: tomorrow,
+        fullDurationMinutes: entry.detail.routine.fullDurationMinutes,
+        miniDurationMinutes: entry.detail.routine.miniDurationMinutes,
+        isActive: entry.detail.routine.isActive,
+        reminderEnabled: entry.detail.routine.reminderEnabled,
+      ),
+    );
   }
 
   Future<void> _cancelActionReminders(TodayTimelineEntry entry) async {

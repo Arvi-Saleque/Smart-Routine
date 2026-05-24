@@ -46,6 +46,9 @@ class ReminderSettings {
 class NotificationSettingsKeys {
   const NotificationSettingsKeys._();
 
+  // SettingsRepository and SharedPreferencesNotificationSettings both use
+  // these keys intentionally so app settings and scheduler settings stay in
+  // sync without introducing another persistence layer.
   static const remindersEnabled = 'notifications.reminders_enabled';
   static const defaultPreparationReminderMinutes =
       'notifications.default_preparation_reminder_minutes';
