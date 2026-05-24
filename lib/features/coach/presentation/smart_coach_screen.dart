@@ -54,7 +54,7 @@ class _SmartCoachBody extends StatelessWidget {
             icon: Icons.lightbulb_outline,
             title: 'Coach is waiting for data',
             message:
-                'Complete, miss, recover, or skip routines to unlock local suggestions.',
+                'Complete, miss, recover, or skip activities to unlock local suggestions.',
           ),
         ],
       );

@@ -48,14 +48,14 @@ class _AnalyticsBody extends StatelessWidget {
         children: const [
           SectionHeader(
             title: 'Productivity analytics',
-            subtitle: 'Charts use local routine logs and focus sessions.',
+            subtitle: 'Charts use local activity logs and focus sessions.',
           ),
           SizedBox(height: 16),
           EmptyState(
             icon: Icons.query_stats_outlined,
             title: 'No analytics yet',
             message:
-                'Complete, skip, or focus on routines to build your first chart.',
+                'Complete, skip, or focus on activities to build your first chart.',
           ),
         ],
       );
@@ -230,7 +230,7 @@ class _DailyScoreChart extends StatelessWidget {
       return const EmptyState(
         icon: Icons.show_chart,
         title: 'No score data',
-        message: 'Daily scores appear after routine activity is saved.',
+        message: 'Daily scores appear after activity data is saved.',
       );
     }
 
@@ -270,7 +270,7 @@ class _CompletionChart extends StatelessWidget {
       return const EmptyState(
         icon: Icons.bar_chart,
         title: 'No completion data',
-        message: 'Completion bars appear after routine logs exist.',
+        message: 'Completion bars appear after activity logs exist.',
       );
     }
 
@@ -357,7 +357,7 @@ class _CategoryCompletionChart extends StatelessWidget {
       return const EmptyState(
         icon: Icons.pie_chart_outline,
         title: 'No category data',
-        message: 'Category slices appear after routine logs exist.',
+        message: 'Category slices appear after activity logs exist.',
       );
     }
 

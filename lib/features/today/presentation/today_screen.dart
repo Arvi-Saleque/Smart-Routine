@@ -28,7 +28,7 @@ class TodayScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.go('/routine/create'),
         icon: const Icon(Icons.add),
-        label: const Text('Routine'),
+        label: const Text('Add activity'),
       ),
       body: timeline.when(
         data: (data) => _TodayBody(today: today, timeline: data),
@@ -82,46 +82,46 @@ class _TodayBody extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         const SectionHeader(
-          title: 'Current routine',
+          title: 'Now',
           subtitle: 'The active time block is based on the current time.',
         ),
         const SizedBox(height: 12),
         if (active == null)
           const EmptyState(
             icon: Icons.play_circle_outline,
-            title: 'No active routine',
-            message: 'You do not have a routine scheduled for this moment.',
+            title: 'No active activity',
+            message: 'You do not have an activity scheduled for this moment.',
           )
         else
           _TimelineRoutineCard(entry: active, highlight: true),
         const SizedBox(height: 24),
         const SectionHeader(
-          title: 'Next routine',
+          title: 'Next',
           subtitle: 'The next upcoming time block for today.',
         ),
         const SizedBox(height: 12),
         if (next == null)
           const EmptyState(
             icon: Icons.event_available_outlined,
-            title: 'No upcoming routine',
+            title: 'No upcoming activity',
             message:
-                'All scheduled routines for today are either done or past.',
+                'All scheduled activities for today are either done or past.',
           )
         else
           _TimelineRoutineCard(entry: next),
         const SizedBox(height: 24),
         const SectionHeader(
           title: 'Today timeline',
-          subtitle: 'Scheduled routines in chronological order.',
+          subtitle: 'Scheduled activities in chronological order.',
         ),
         const SizedBox(height: 12),
         if (timeline.entries.isEmpty)
           EmptyState(
             icon: Icons.timeline_outlined,
-            title: 'No routines planned',
-            message: 'The timeline is ready for your first routine block.',
+            title: 'No activities planned for today',
+            message: 'The timeline is ready for your first activity block.',
             action: PrimaryButton(
-              label: 'Create routine',
+              label: 'Add activity',
               icon: Icons.add,
               onPressed: () => context.go('/routine/create'),
             ),
@@ -152,6 +152,8 @@ class _TimelineRoutineCard extends ConsumerWidget {
         status == RoutineStatus.recovered ||
         status == RoutineStatus.moved;
     final isMissed = status == RoutineStatus.missed;
+    final canSuggestMini =
+        detail.routine.miniDurationMinutes < detail.routine.fullDurationMinutes;
 
     return RoutineCard(
       title: detail.routine.title,
@@ -170,12 +172,13 @@ class _TimelineRoutineCard extends ConsumerWidget {
       onSkip: isFinished ? null : () => _markSkipped(context, ref),
       extraActions: isMissed
           ? [
-              OutlinedButton.icon(
-                onPressed: () =>
-                    context.go('/focus/${detail.routine.id}?mode=mini'),
-                icon: const Icon(Icons.restart_alt),
-                label: const Text('Mini'),
-              ),
+              if (canSuggestMini)
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      context.go('/focus/${detail.routine.id}?mode=mini'),
+                  icon: const Icon(Icons.restart_alt),
+                  label: const Text('Mini'),
+                ),
               OutlinedButton.icon(
                 onPressed: () => _rescheduleToday(context, ref),
                 icon: const Icon(Icons.schedule),
@@ -201,7 +204,7 @@ class _TimelineRoutineCard extends ConsumerWidget {
       );
     } catch (error) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not complete routine: $error')),
+        SnackBar(content: Text('Could not complete activity: $error')),
       );
     }
   }
@@ -222,7 +225,7 @@ class _TimelineRoutineCard extends ConsumerWidget {
       );
     } catch (error) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not skip routine: $error')),
+        SnackBar(content: Text('Could not skip activity: $error')),
       );
     }
   }
@@ -239,7 +242,7 @@ class _TimelineRoutineCard extends ConsumerWidget {
       );
     } catch (error) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not reschedule routine: $error')),
+        SnackBar(content: Text('Could not reschedule activity: $error')),
       );
     }
   }
@@ -256,7 +259,7 @@ class _TimelineRoutineCard extends ConsumerWidget {
       );
     } catch (error) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not move routine: $error')),
+        SnackBar(content: Text('Could not move activity: $error')),
       );
     }
   }
@@ -268,7 +271,7 @@ class _SkipReasonDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SimpleDialog(
-      title: const Text('Why skip this routine?'),
+      title: const Text('Why skip this activity?'),
       children: [
         for (final reason in SkipReason.values)
           SimpleDialogOption(

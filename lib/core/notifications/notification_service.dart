@@ -25,8 +25,8 @@ class LocalNotificationService implements NotificationGateway {
   bool _permissionGranted = true;
 
   static const _channelId = 'routine_reminders';
-  static const _channelName = 'Routine reminders';
-  static const _channelDescription = 'Time-wise routine reminders';
+  static const _channelName = 'Activity reminders';
+  static const _channelDescription = 'Time-wise activity reminders';
 
   @override
   Future<bool> initialize() async {

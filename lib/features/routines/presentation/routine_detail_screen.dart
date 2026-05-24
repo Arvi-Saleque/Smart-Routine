@@ -24,7 +24,7 @@ class RoutineDetailScreen extends ConsumerWidget {
     final detail = ref.watch(routineDetailProvider(routineId));
 
     return AppScaffold(
-      title: 'Routine detail',
+      title: 'Activity Details',
       body: detail.when(
         data: (routineDetail) {
           if (routineDetail == null) {
@@ -33,8 +33,8 @@ class RoutineDetailScreen extends ConsumerWidget {
               children: const [
                 EmptyState(
                   icon: Icons.search_off_outlined,
-                  title: 'Routine not found',
-                  message: 'This routine may have been deleted.',
+                  title: 'Activity not found',
+                  message: 'This activity may have been deleted.',
                 ),
               ],
             );
@@ -46,7 +46,7 @@ class RoutineDetailScreen extends ConsumerWidget {
           children: [
             EmptyState(
               icon: Icons.error_outline,
-              title: 'Could not load routine',
+              title: 'Could not load activity',
               message: '$error',
             ),
           ],
@@ -75,7 +75,7 @@ class _RoutineDetailBody extends ConsumerWidget {
           title: routine.title,
           subtitle: routine.description ?? 'No description added.',
           trailing: IconButton(
-            tooltip: 'Edit routine',
+            tooltip: 'Edit activity',
             onPressed: () => context.go('/routine/${routine.id}/edit'),
             icon: const Icon(Icons.edit_outlined),
           ),
@@ -109,20 +109,22 @@ class _RoutineDetailBody extends ConsumerWidget {
         _InfoCard(
           title: 'Goal',
           rows: {
-            'Type': GoalType.values.byName(routine.goalType).label,
+            'Tracking': _trackingLabel(
+              GoalType.values.byName(routine.goalType),
+            ),
             'Target': detail.goalLabel,
-            'Routine type': RoutineType.values
+            'Activity type': RoutineType.values
                 .byName(routine.routineType)
                 .label,
             'Priority': PriorityLevel.values.byName(routine.priority).label,
-            'Difficulty': DifficultyLevel.values
+            'Effort Level': DifficultyLevel.values
                 .byName(routine.difficulty)
                 .label,
           },
         ),
         const SizedBox(height: 12),
         _InfoCard(
-          title: 'Versions',
+          title: 'Recovery',
           rows: {
             'Full': Duration(minutes: routine.fullDurationMinutes).compactLabel,
             'Medium': Duration(
@@ -156,7 +158,7 @@ class _RoutineDetailBody extends ConsumerWidget {
         TextButton.icon(
           onPressed: () => _confirmDelete(context, ref),
           icon: const Icon(Icons.delete_outline),
-          label: const Text('Delete routine'),
+          label: const Text('Delete activity'),
         ),
       ],
     );
@@ -167,9 +169,9 @@ class _RoutineDetailBody extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Delete routine?'),
+          title: const Text('Delete activity?'),
           content: const Text(
-            'This removes the routine and its local schedule data.',
+            'This removes the activity and its local schedule data.',
           ),
           actions: [
             TextButton(
@@ -190,6 +192,15 @@ class _RoutineDetailBody extends ConsumerWidget {
     await ref.read(routineRepositoryProvider).deleteRoutine(detail.routine.id);
     if (context.mounted) context.go('/routines');
   }
+}
+
+String _trackingLabel(GoalType type) {
+  return switch (type) {
+    GoalType.simpleCheck => 'Just mark as done',
+    GoalType.duration => 'Track time',
+    GoalType.quantity => 'Track quantity',
+    GoalType.count => 'Track count',
+  };
 }
 
 class _InfoCard extends StatelessWidget {

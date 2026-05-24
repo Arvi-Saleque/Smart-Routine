@@ -5,9 +5,9 @@ enum GoalType {
   quantity;
 
   String get label => switch (this) {
-    GoalType.simpleCheck => 'Simple check',
-    GoalType.duration => 'Duration',
-    GoalType.count => 'Count',
-    GoalType.quantity => 'Quantity',
+    GoalType.simpleCheck => 'Just mark as done',
+    GoalType.duration => 'Track time',
+    GoalType.count => 'Track count',
+    GoalType.quantity => 'Track quantity',
   };
 }

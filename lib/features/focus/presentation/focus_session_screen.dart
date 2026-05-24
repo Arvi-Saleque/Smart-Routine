@@ -62,8 +62,8 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> {
               children: const [
                 EmptyState(
                   icon: Icons.search_off_outlined,
-                  title: 'Routine not found',
-                  message: 'This routine may have been deleted.',
+                  title: 'Activity not found',
+                  message: 'This activity may have been deleted.',
                 ),
               ],
             );
@@ -75,7 +75,7 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> {
           children: [
             EmptyState(
               icon: Icons.error_outline,
-              title: 'Could not load routine',
+              title: 'Could not load activity',
               message: '$error',
             ),
           ],
@@ -373,7 +373,7 @@ class _RecentFocusSessions extends ConsumerWidget {
           return const EmptyState(
             icon: Icons.history_outlined,
             title: 'No focus sessions yet',
-            message: 'Finished sessions for this routine will appear here.',
+            message: 'Finished sessions for this activity will appear here.',
           );
         }
 

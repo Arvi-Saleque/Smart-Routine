@@ -62,7 +62,7 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
       children: [
         const SectionHeader(
           title: 'Monthly view',
-          subtitle: 'Routine activity, missed blocks, and saved scores.',
+          subtitle: 'Activity history, missed blocks, and saved scores.',
         ),
         const SizedBox(height: 16),
         FutureBuilder<CalendarMonthSummary>(
@@ -271,8 +271,8 @@ class _SelectedDaySummary extends StatelessWidget {
         if (timeline.entries.isEmpty)
           const EmptyState(
             icon: Icons.event_busy_outlined,
-            title: 'No routines planned',
-            message: 'This day has no scheduled routine blocks.',
+            title: 'No activities planned',
+            message: 'This day has no scheduled activity blocks.',
           )
         else
           for (final entry in timeline.entries) ...[

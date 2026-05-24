@@ -102,7 +102,7 @@ const _destinations = [
   ),
   _NavigationDestinationData(
     path: '/routines',
-    label: 'Routines',
+    label: 'Activities',
     icon: Icons.checklist_outlined,
     selectedIcon: Icons.checklist,
   ),

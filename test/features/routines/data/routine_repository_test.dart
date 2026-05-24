@@ -132,14 +132,14 @@ void main() {
     );
   });
 
-  test('no repeat day fails', () async {
+  test('custom repeat requires selected days', () async {
     await expectLater(
       repository.createRoutine(_validFormData(repeatDays: const {})),
       throwsA(isA<RoutineFormValidationException>()),
     );
   });
 
-  test('simpleCheck can save without target', () async {
+  test('simple check activity can save without target', () async {
     final routineId = await repository.createRoutine(
       _validFormData(goalType: GoalType.simpleCheck, targetValue: null),
     );
@@ -151,7 +151,7 @@ void main() {
     expect(detail.routine.targetValue, isNull);
   });
 
-  test('duration count and quantity goals require target', () async {
+  test('time count and quantity tracking requires target', () async {
     for (final goalType in [
       GoalType.duration,
       GoalType.count,
@@ -167,14 +167,14 @@ void main() {
   });
 
   test(
-    'routine list orders active routines before inactive routines',
+    'activity list orders active activities before inactive activities',
     () async {
       final inactiveId = await repository.createRoutine(
-        _validFormData(title: 'A inactive routine'),
+        _validFormData(title: 'A inactive activity'),
       );
       await repository.setRoutineActive(inactiveId, false);
       final activeId = await repository.createRoutine(
-        _validFormData(title: 'Z active routine'),
+        _validFormData(title: 'Z active activity'),
       );
 
       final routines = await repository.watchRoutineDetails().first;
@@ -186,7 +186,7 @@ void main() {
     },
   );
 
-  test('every day routine appears tomorrow', () async {
+  test('every day activity appears tomorrow', () async {
     final tomorrow = DateTime.now().add(const Duration(days: 1));
     await repository.createRoutine(
       _validFormData(repeatDays: const {1, 2, 3, 4, 5, 6, 7}),
@@ -199,7 +199,7 @@ void main() {
     expect(timeline.entries, hasLength(1));
   });
 
-  test('today-only routine does not appear tomorrow', () async {
+  test('today-only activity does not appear tomorrow', () async {
     final today = DateTime.now();
     final tomorrow = today.add(const Duration(days: 1));
     await repository.createRoutine(
@@ -224,7 +224,7 @@ void main() {
     expect(tomorrowTimeline.entries, isEmpty);
   });
 
-  test('custom weekday routine appears only on selected weekdays', () async {
+  test('custom weekday activity appears only on selected weekdays', () async {
     final monday = DateTime(2026, 5, 18);
     final tuesday = DateTime(2026, 5, 19);
     await repository.createRoutine(
@@ -242,7 +242,7 @@ void main() {
     expect(tuesdayTimeline.entries, isEmpty);
   });
 
-  test('weekday routine does not appear on weekend', () async {
+  test('weekday activity does not appear on weekend', () async {
     final saturday = DateTime(2026, 5, 23);
     await repository.createRoutine(
       _validFormData(repeatDays: const {1, 2, 3, 4, 5}),
@@ -255,7 +255,7 @@ void main() {
     expect(timeline.entries, isEmpty);
   });
 
-  test('weekend routine does not appear on weekday', () async {
+  test('weekend activity does not appear on weekday', () async {
     final monday = DateTime(2026, 5, 18);
     await repository.createRoutine(_validFormData(repeatDays: const {6, 7}));
 

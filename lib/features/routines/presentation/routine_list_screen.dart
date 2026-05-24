@@ -28,17 +28,17 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen> {
     final categories = ref.watch(categoriesProvider);
 
     return AppScaffold(
-      title: 'Routines',
+      title: 'Activities',
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.go('/routine/create'),
-        tooltip: 'Add routine',
+        tooltip: 'Add activity',
         child: const Icon(Icons.add),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           const SectionHeader(
-            title: 'All routines',
+            title: 'Activities',
             subtitle: 'Create, edit, pause, or delete your time blocks.',
           ),
           const SizedBox(height: 16),
@@ -58,7 +58,7 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen> {
             data: _buildRoutineList,
             error: (error, _) => EmptyState(
               icon: Icons.error_outline,
-              title: 'Could not load routines',
+              title: 'Could not load activities',
               message: '$error',
             ),
             loading: () => const Center(
@@ -85,10 +85,10 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen> {
     if (filtered.isEmpty) {
       return EmptyState(
         icon: Icons.checklist_outlined,
-        title: 'Build your first routine',
-        message: 'Create a routine to start planning your day by time blocks.',
+        title: 'Add your first activity',
+        message: 'Add an activity to start planning your day by time blocks.',
         action: PrimaryButton(
-          label: 'Add routine',
+          label: 'Add activity',
           icon: Icons.add,
           onPressed: () => context.go('/routine/create'),
         ),

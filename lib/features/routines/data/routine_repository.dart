@@ -332,6 +332,7 @@ class RoutineDetail {
   String get repeatLabel {
     final schedule = this.schedule;
     if (schedule == null) return 'No repeat days';
+    if (schedule.specificDate != null) return 'Today only';
     return DateTimeUtils.formatRepeatDays(schedule.repeatDays);
   }
 
@@ -390,7 +391,7 @@ class RoutineFormData {
 
   void validate() {
     if (title.trim().isEmpty) {
-      throw const RoutineFormValidationException('Title is required.');
+      throw const RoutineFormValidationException('Activity name is required.');
     }
     if (categoryId.trim().isEmpty) {
       throw const RoutineFormValidationException('Category is required.');
@@ -403,25 +404,23 @@ class RoutineFormData {
     }
     if (endTimeMinutes <= startTimeMinutes) {
       throw const RoutineFormValidationException(
-        'End time must be after start time. Overnight routines are not supported in the MVP.',
+        'End time must be after start time. Overnight activities will be supported later.',
       );
     }
     if (goalType != GoalType.simpleCheck &&
         (targetValue == null || targetValue! <= 0)) {
       throw const RoutineFormValidationException(
-        'Target value is required for this goal type.',
+        'Target must be positive for this tracking method.',
       );
     }
     if (targetValue != null && targetValue! <= 0) {
-      throw const RoutineFormValidationException(
-        'Target value must be positive.',
-      );
+      throw const RoutineFormValidationException('Target must be positive.');
     }
     if (fullDurationMinutes <= 0 ||
         mediumDurationMinutes <= 0 ||
         miniDurationMinutes <= 0) {
       throw const RoutineFormValidationException(
-        'Full, medium, and mini versions must be positive.',
+        'Recovery durations must be positive.',
       );
     }
     if (miniDurationMinutes > mediumDurationMinutes ||

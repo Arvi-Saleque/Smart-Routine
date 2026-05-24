@@ -368,7 +368,7 @@ class LocalRoutineNotificationScheduler
   String _bodyFor(RoutineReminderType type, RoutineReminderSchedule routine) {
     return switch (type) {
       RoutineReminderType.preparation =>
-        'Prepare for your ${routine.fullDurationMinutes}-minute routine.',
+        'Prepare for your ${routine.fullDurationMinutes}-minute activity.',
       RoutineReminderType.start =>
         'Goal: ${routine.targetSummary}. Tap to open RoutineOS.',
       RoutineReminderType.late =>

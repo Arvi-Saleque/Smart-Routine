@@ -44,9 +44,9 @@ class SmartCoachEngine {
 
     return SmartCoachInsight(
       id: 'late-night-timing',
-      title: 'Late-night routines look fragile',
+      title: 'Late-night activities look fragile',
       message:
-          'Your routines after 10 PM are completed only ${(rate * 100).round()}% of the time. Move important work earlier.',
+          'Your late-night activities are completed only ${(rate * 100).round()}% of the time. Move important work earlier.',
       severity: SmartCoachSeverity.warning,
       category: SmartCoachCategory.timing,
       actionLabel: 'Move earlier',

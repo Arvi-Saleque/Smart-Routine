@@ -422,7 +422,7 @@ class TodayTimeline {
   String get scoreMessage {
     final score = dailyScore;
     if (entries.isEmpty) {
-      return 'Create routines to start tracking today.';
+      return 'Add activities to start tracking today.';
     }
     if (score == null) return 'No saved score for this date yet.';
     return 'Completion ${score.completionScore}/40, on-time ${score.onTimeScore}/20, '
@@ -432,7 +432,7 @@ class TodayTimeline {
 
   String get progressMessage {
     if (entries.isEmpty) {
-      return 'The timeline is ready for your first routine block.';
+      return 'The timeline is ready for your first activity block.';
     }
     return '$completedCount/${entries.length} completed, '
         '$skippedCount skipped, $missedCount missed.';

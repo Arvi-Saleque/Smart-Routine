@@ -362,3 +362,19 @@ Manual APK testing and follow-up polish.
 - Added tests for every-day, today-only, custom weekday, weekday-only, and weekend-only timeline behavior.
 - Ran `flutter analyze`: passed with no issues.
 - Ran `flutter test`: passed with all tests green.
+
+## Latest Update: Activity Creation UX Simplification
+
+- Kept internal Routine class/file/database names unchanged, but changed user-facing copy for single scheduled items to Activity across Today, Activities, Activity Details, Focus, Calendar, Analytics, Smart Coach, Settings, and local notification text.
+- Simplified the creation form so the default visible section contains Activity name, Category, Repeat option, Start time, End time, and Reminder.
+- Kept repeat options explicit: Today only, Every day, Weekdays, Weekends, and Custom days, with Every day as the default.
+- Moved tracking, recovery, and priority/effort controls into collapsed Tracking, Recovery, and Advanced sections.
+- Reworded tracking controls to Just mark as done, Track time, Track quantity, and Track count. Simple check hides target/unit and saves without a target.
+- Reworked recovery controls to a simple mini-version toggle. Disabled recovery stores safe full-duration defaults without adding a schema flag.
+- Updated validation messages to use Activity/Target wording and keep overnight activities blocked for MVP.
+- Added/updated tests for repeat behavior, simple check target behavior, tracking target requirements, custom repeat validation, and major-screen Activity wording.
+- Ran `flutter clean`: passed.
+- Ran `flutter pub get`: passed.
+- Ran `dart run build_runner build --delete-conflicting-outputs`: passed; installed build_runner ignores that deprecated flag.
+- Ran `flutter analyze`: passed with no issues.
+- Ran `flutter test`: passed with all 52 tests green.

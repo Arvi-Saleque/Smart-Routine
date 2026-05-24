@@ -78,7 +78,7 @@ class SettingsScreen extends ConsumerWidget {
         return AlertDialog(
           title: const Text('Clear local data?'),
           content: const Text(
-            'This removes routines, schedules, logs, focus sessions, reminders, and daily scores from this device. App settings stay unchanged.',
+            'This removes activities, schedules, logs, focus sessions, reminders, and daily scores from this device. App settings stay unchanged.',
           ),
           actions: [
             TextButton(
@@ -189,11 +189,11 @@ class _ReminderSettingsTile extends StatelessWidget {
                     ? Icons.notifications_active_outlined
                     : Icons.notifications_off_outlined,
               ),
-              title: const Text('Routine reminders'),
+              title: const Text('Activity reminders'),
               subtitle: Text(
                 settings.remindersEnabled
                     ? 'Local reminders are enabled.'
-                    : 'All local routine reminders are paused.',
+                    : 'All local activity reminders are paused.',
               ),
               value: settings.remindersEnabled,
               onChanged: onEnabledChanged,
@@ -350,7 +350,7 @@ class _ClearDataTile extends StatelessWidget {
         leading: Icon(Icons.delete_outline, color: colorScheme.error),
         title: const Text('Clear all local data'),
         subtitle: const Text(
-          'Remove routines, logs, focus sessions, reminders, and scores.',
+          'Remove activities, logs, focus sessions, reminders, and scores.',
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: onConfirmed,
