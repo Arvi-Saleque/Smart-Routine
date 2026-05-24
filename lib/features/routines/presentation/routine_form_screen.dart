@@ -44,6 +44,8 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
   Set<int> _repeatDays = {1, 2, 3, 4, 5, 6, 7};
+  _RepeatOption _repeatOption = _RepeatOption.everyDay;
+  String? _specificDate;
   bool _reminderEnabled = true;
   bool _initialized = false;
   bool _saving = false;
@@ -122,11 +124,13 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
             routineType: _routineType,
             startTime: _startTime,
             endTime: _endTime,
+            repeatOption: _repeatOption,
             repeatDays: _repeatDays,
             onRoutineTypeChanged: (value) =>
                 setState(() => _routineType = value),
             onPickStart: () => _pickTime(isStart: true),
             onPickEnd: () => _pickTime(isStart: false),
+            onRepeatOptionChanged: _setRepeatOption,
             onRepeatDayChanged: _setRepeatDay,
           ),
           const SizedBox(height: 12),
@@ -195,12 +199,28 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     _startTime = DateTimeUtils.minutesToTimeOfDay(data.startTimeMinutes);
     _endTime = DateTimeUtils.minutesToTimeOfDay(data.endTimeMinutes);
     _repeatDays = {...data.repeatDays};
+    _specificDate = data.specificDate;
+    _repeatOption = _repeatOptionFromData(data);
     _reminderEnabled = data.reminderEnabled;
     _initialized = true;
   }
 
+  void _setRepeatOption(_RepeatOption option) {
+    setState(() {
+      _repeatOption = option;
+      _specificDate = option == _RepeatOption.todayOnly
+          ? DateTimeUtils.dateKey(DateTime.now())
+          : null;
+      if (option != _RepeatOption.customDays) {
+        _repeatDays = option.repeatDays;
+      }
+    });
+  }
+
   void _setRepeatDay(int weekday, bool selected) {
     setState(() {
+      _repeatOption = _RepeatOption.customDays;
+      _specificDate = null;
       if (selected) {
         _repeatDays.add(weekday);
       } else {
@@ -262,6 +282,12 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     required int endMinutes,
   }) {
     final targetText = _targetValueController.text.trim();
+    final repeatDays = _repeatOption.repeatDays.isEmpty
+        ? _repeatDays
+        : _repeatOption.repeatDays;
+    final specificDate = _repeatOption == _RepeatOption.todayOnly
+        ? _specificDate ?? DateTimeUtils.dateKey(DateTime.now())
+        : null;
     return RoutineFormData(
       title: _titleController.text,
       description: _descriptionController.text,
@@ -274,7 +300,8 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
       difficulty: _difficulty,
       startTimeMinutes: startMinutes,
       endTimeMinutes: endMinutes,
-      repeatDays: _repeatDays,
+      repeatDays: specificDate == null ? repeatDays : const {},
+      specificDate: specificDate,
       fullDurationMinutes: int.tryParse(_fullDurationController.text) ?? 0,
       mediumDurationMinutes: int.tryParse(_mediumDurationController.text) ?? 0,
       miniDurationMinutes: int.tryParse(_miniDurationController.text) ?? 0,
@@ -282,6 +309,22 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
       timezone: DateTime.now().timeZoneName,
     );
   }
+}
+
+_RepeatOption _repeatOptionFromData(RoutineFormData data) {
+  if (data.specificDate != null) return _RepeatOption.todayOnly;
+  for (final option in _RepeatOption.values) {
+    if (option == _RepeatOption.todayOnly ||
+        option == _RepeatOption.customDays) {
+      continue;
+    }
+    if (_setEquals(data.repeatDays, option.repeatDays)) return option;
+  }
+  return _RepeatOption.customDays;
+}
+
+bool _setEquals(Set<int> left, Set<int> right) {
+  return left.length == right.length && left.containsAll(right);
 }
 
 String? _validateTargetValue(GoalType goalType, String? value) {
@@ -381,20 +424,24 @@ class _ScheduleSection extends StatelessWidget {
     required this.routineType,
     required this.startTime,
     required this.endTime,
+    required this.repeatOption,
     required this.repeatDays,
     required this.onRoutineTypeChanged,
     required this.onPickStart,
     required this.onPickEnd,
+    required this.onRepeatOptionChanged,
     required this.onRepeatDayChanged,
   });
 
   final RoutineType routineType;
   final TimeOfDay startTime;
   final TimeOfDay endTime;
+  final _RepeatOption repeatOption;
   final Set<int> repeatDays;
   final ValueChanged<RoutineType> onRoutineTypeChanged;
   final VoidCallback onPickStart;
   final VoidCallback onPickEnd;
+  final ValueChanged<_RepeatOption> onRepeatOptionChanged;
   final void Function(int weekday, bool selected) onRepeatDayChanged;
 
   @override
@@ -434,18 +481,41 @@ class _ScheduleSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final day in DateTimeUtils.weekdayShortLabels.entries)
-              FilterChip(
-                selected: repeatDays.contains(day.key),
-                label: Text(day.value),
-                onSelected: (selected) => onRepeatDayChanged(day.key, selected),
-              ),
-          ],
+        const _InfoPanel(
+          icon: Icons.repeat,
+          message:
+              'Repeating routines automatically appear on future selected days. Today-only routines appear once.',
         ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<_RepeatOption>(
+          initialValue: repeatOption,
+          decoration: const InputDecoration(labelText: 'Repeat'),
+          items: _RepeatOption.values
+              .map(
+                (option) =>
+                    DropdownMenuItem(value: option, child: Text(option.label)),
+              )
+              .toList(),
+          onChanged: (option) {
+            if (option != null) onRepeatOptionChanged(option);
+          },
+        ),
+        if (repeatOption == _RepeatOption.customDays) ...[
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final day in DateTimeUtils.weekdayShortLabels.entries)
+                FilterChip(
+                  selected: repeatDays.contains(day.key),
+                  label: Text(day.value),
+                  onSelected: (selected) =>
+                      onRepeatDayChanged(day.key, selected),
+                ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -847,3 +917,16 @@ class _MissingRoutine extends StatelessWidget {
 }
 
 const _targetUnits = ['minutes', 'pages', 'glasses', 'reps', 'hours', 'tasks'];
+
+enum _RepeatOption {
+  todayOnly('Today only', {}),
+  everyDay('Every day', {1, 2, 3, 4, 5, 6, 7}),
+  weekdays('Weekdays', {1, 2, 3, 4, 5}),
+  weekends('Weekends', {6, 7}),
+  customDays('Custom days', {});
+
+  const _RepeatOption(this.label, this.repeatDays);
+
+  final String label;
+  final Set<int> repeatDays;
+}

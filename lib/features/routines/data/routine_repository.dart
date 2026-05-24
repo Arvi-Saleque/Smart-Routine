@@ -134,6 +134,7 @@ class RoutineRepository {
               startTimeMinutes: data.startTimeMinutes,
               endTimeMinutes: data.endTimeMinutes,
               repeatDays: DateTimeUtils.encodeRepeatDays(data.repeatDays),
+              specificDate: Value(data.specificDate),
               timezone: data.timezone,
               createdAt: now,
               updatedAt: now,
@@ -150,6 +151,7 @@ class RoutineRepository {
         startTimeMinutes: data.startTimeMinutes,
         endTimeMinutes: data.endTimeMinutes,
         repeatDays: data.repeatDays,
+        specificDate: data.specificDate,
         fullDurationMinutes: data.fullDurationMinutes,
         miniDurationMinutes: data.miniDurationMinutes,
         isActive: true,
@@ -202,6 +204,7 @@ class RoutineRepository {
               startTimeMinutes: data.startTimeMinutes,
               endTimeMinutes: data.endTimeMinutes,
               repeatDays: DateTimeUtils.encodeRepeatDays(data.repeatDays),
+              specificDate: Value(data.specificDate),
               timezone: data.timezone,
               createdAt: now,
               updatedAt: now,
@@ -218,6 +221,7 @@ class RoutineRepository {
         startTimeMinutes: data.startTimeMinutes,
         endTimeMinutes: data.endTimeMinutes,
         repeatDays: data.repeatDays,
+        specificDate: data.specificDate,
         fullDurationMinutes: data.fullDurationMinutes,
         miniDurationMinutes: data.miniDurationMinutes,
         isActive: isActive,
@@ -362,6 +366,7 @@ class RoutineFormData {
     this.description,
     this.targetValue,
     this.targetUnit,
+    this.specificDate,
   });
 
   final String title;
@@ -376,6 +381,7 @@ class RoutineFormData {
   final int startTimeMinutes;
   final int endTimeMinutes;
   final Set<int> repeatDays;
+  final String? specificDate;
   final int fullDurationMinutes;
   final int mediumDurationMinutes;
   final int miniDurationMinutes;
@@ -389,9 +395,10 @@ class RoutineFormData {
     if (categoryId.trim().isEmpty) {
       throw const RoutineFormValidationException('Category is required.');
     }
-    if (repeatDays.isEmpty) {
+    final hasSpecificDate = specificDate?.trim().isNotEmpty ?? false;
+    if (repeatDays.isEmpty && !hasSpecificDate) {
       throw const RoutineFormValidationException(
-        'Select at least one repeat day.',
+        'Select repeat days or choose today only.',
       );
     }
     if (endTimeMinutes <= startTimeMinutes) {
@@ -442,6 +449,7 @@ class RoutineFormData {
       startTimeMinutes: schedule?.startTimeMinutes ?? 540,
       endTimeMinutes: schedule?.endTimeMinutes ?? 600,
       repeatDays: DateTimeUtils.decodeRepeatDays(schedule?.repeatDays ?? ''),
+      specificDate: schedule?.specificDate,
       fullDurationMinutes: routine.fullDurationMinutes,
       mediumDurationMinutes: routine.mediumDurationMinutes,
       miniDurationMinutes: routine.miniDurationMinutes,

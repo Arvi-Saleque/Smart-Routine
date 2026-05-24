@@ -6,7 +6,9 @@ import 'package:routine_os/core/enums/goal_type.dart';
 import 'package:routine_os/core/enums/priority_level.dart';
 import 'package:routine_os/core/enums/routine_type.dart';
 import 'package:routine_os/core/notifications/notification_scheduler.dart';
+import 'package:routine_os/core/utils/date_time_utils.dart';
 import 'package:routine_os/features/routines/data/routine_repository.dart';
+import 'package:routine_os/features/today/data/today_repository.dart';
 
 void main() {
   late AppDatabase database;
@@ -183,6 +185,86 @@ void main() {
       ]);
     },
   );
+
+  test('every day routine appears tomorrow', () async {
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    await repository.createRoutine(
+      _validFormData(repeatDays: const {1, 2, 3, 4, 5, 6, 7}),
+    );
+
+    final timeline = await TodayRepository(
+      database,
+    ).getTimelineForDate(tomorrow, now: DateTime.now());
+
+    expect(timeline.entries, hasLength(1));
+  });
+
+  test('today-only routine does not appear tomorrow', () async {
+    final today = DateTime.now();
+    final tomorrow = today.add(const Duration(days: 1));
+    await repository.createRoutine(
+      _validFormData(
+        repeatDays: const {},
+        specificDate: DateTimeUtils.dateKey(today),
+      ),
+    );
+    final schedule =
+        (await database.select(database.routineSchedules).get()).single;
+    expect(schedule.repeatDays, isEmpty);
+    expect(schedule.specificDate, DateTimeUtils.dateKey(today));
+
+    final todayTimeline = await TodayRepository(
+      database,
+    ).getTimelineForDate(today, now: today);
+    final tomorrowTimeline = await TodayRepository(
+      database,
+    ).getTimelineForDate(tomorrow, now: today);
+
+    expect(todayTimeline.entries, hasLength(1));
+    expect(tomorrowTimeline.entries, isEmpty);
+  });
+
+  test('custom weekday routine appears only on selected weekdays', () async {
+    final monday = DateTime(2026, 5, 18);
+    final tuesday = DateTime(2026, 5, 19);
+    await repository.createRoutine(
+      _validFormData(repeatDays: {monday.weekday}),
+    );
+
+    final mondayTimeline = await TodayRepository(
+      database,
+    ).getTimelineForDate(monday, now: DateTime(2026, 5, 18, 8));
+    final tuesdayTimeline = await TodayRepository(
+      database,
+    ).getTimelineForDate(tuesday, now: DateTime(2026, 5, 18, 8));
+
+    expect(mondayTimeline.entries, hasLength(1));
+    expect(tuesdayTimeline.entries, isEmpty);
+  });
+
+  test('weekday routine does not appear on weekend', () async {
+    final saturday = DateTime(2026, 5, 23);
+    await repository.createRoutine(
+      _validFormData(repeatDays: const {1, 2, 3, 4, 5}),
+    );
+
+    final timeline = await TodayRepository(
+      database,
+    ).getTimelineForDate(saturday, now: DateTime(2026, 5, 18, 8));
+
+    expect(timeline.entries, isEmpty);
+  });
+
+  test('weekend routine does not appear on weekday', () async {
+    final monday = DateTime(2026, 5, 18);
+    await repository.createRoutine(_validFormData(repeatDays: const {6, 7}));
+
+    final timeline = await TodayRepository(
+      database,
+    ).getTimelineForDate(monday, now: DateTime(2026, 5, 18, 8));
+
+    expect(timeline.entries, isEmpty);
+  });
 }
 
 RoutineFormData _validFormData({
@@ -197,6 +279,7 @@ RoutineFormData _validFormData({
   int fullDurationMinutes = 60,
   int mediumDurationMinutes = 30,
   int miniDurationMinutes = 10,
+  String? specificDate,
 }) {
   return RoutineFormData(
     title: title,
@@ -210,6 +293,7 @@ RoutineFormData _validFormData({
     startTimeMinutes: startTimeMinutes,
     endTimeMinutes: endTimeMinutes,
     repeatDays: repeatDays,
+    specificDate: specificDate,
     fullDurationMinutes: fullDurationMinutes,
     mediumDurationMinutes: mediumDurationMinutes,
     miniDurationMinutes: miniDurationMinutes,

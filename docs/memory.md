@@ -350,3 +350,15 @@ Manual APK testing and follow-up polish.
 - Added a Settings screen back arrow that pops when possible and falls back to Today.
 - Ran `flutter analyze`: passed with no issues.
 - Ran targeted widget/settings tests: passed.
+
+## Latest Update: Routine Repeat Creation Options
+
+- Added explicit repeat choices to routine creation/editing: Today only, Every day, Weekdays, Weekends, and Custom days.
+- Kept Every day as the default repeat choice for new routines.
+- Today-only routines now save a one-time `specificDate` schedule with empty `repeatDays`.
+- Repeating presets save weekly `repeatDays` with `specificDate = null`.
+- Added helper text explaining recurring versus today-only behavior.
+- Updated `RoutineFormData` and `RoutineRepository` to carry optional `specificDate` schedule data.
+- Added tests for every-day, today-only, custom weekday, weekday-only, and weekend-only timeline behavior.
+- Ran `flutter analyze`: passed with no issues.
+- Ran `flutter test`: passed with all tests green.
