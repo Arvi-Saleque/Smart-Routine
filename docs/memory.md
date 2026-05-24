@@ -302,3 +302,18 @@ Manual APK testing and follow-up polish.
 - Install `build/app/outputs/flutter-apk/app-debug.apk` on an Android device.
 - Grant notification permission when prompted.
 - Create routines, complete/skip/recover/focus them, and review Today, Calendar, Analytics, Smart Coach, and Settings reset behavior.
+
+## Latest Update: Android Test Readiness Verification
+
+- Confirmed local Flutter is `3.41.1` with Dart `3.11.0`, matching the project SDK requirement.
+- Ran `flutter clean`: passed.
+- Ran `flutter pub get`: passed.
+- Ran `dart run build_runner build --delete-conflicting-outputs`: passed; installed build_runner ignores that deprecated flag.
+- Ran `flutter analyze`: passed with no issues.
+- Ran `flutter test`: passed with all tests green.
+- Ran `flutter build apk --debug`: passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
+- Updated `android/.gitignore` so `gradle-wrapper.jar`, `gradlew`, and `gradlew.bat` are not ignored.
+- Added the Gradle wrapper files to the repo so Android debug builds work from a fresh clone.
+- Fixed weekly base reminder refreshes so they preserve existing one-time `specificDate` reminders for the same routine.
+- Added a regression test proving a base weekly refresh does not cancel or overwrite the moved-to-tomorrow reminder.
+- Re-verified specific-date reminder behavior: tomorrow schedules can schedule reminders, past specific dates do not schedule reminders, and weekly/flexible scheduling behavior remains covered.

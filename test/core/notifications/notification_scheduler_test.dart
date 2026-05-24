@@ -104,6 +104,77 @@ void main() {
     );
   });
 
+  test(
+    'base weekly refresh preserves existing specificDate reminders',
+    () async {
+      final tomorrow = DateTime.now().add(const Duration(days: 1));
+      final dayAfterTomorrow = DateTime.now().add(const Duration(days: 2));
+      final tomorrowKey = _dateKey(tomorrow);
+      await _insertRoutine(database, routineId: 'routine-preserve-specific');
+      await _insertSchedule(
+        database,
+        routineId: 'routine-preserve-specific',
+        specificDate: tomorrowKey,
+        repeatDays: '',
+      );
+
+      await scheduler.scheduleRoutineReminders(
+        RoutineReminderSchedule(
+          routineId: 'routine-preserve-specific',
+          title: 'Moved routine',
+          routineType: 'fixedTime',
+          targetSummary: '20 pages',
+          startTimeMinutes: 720,
+          endTimeMinutes: 780,
+          repeatDays: const {},
+          specificDate: tomorrowKey,
+          fullDurationMinutes: 60,
+          miniDurationMinutes: 10,
+          isActive: true,
+          reminderEnabled: true,
+        ),
+      );
+
+      final specificStartId = notificationIdForDate(
+        routineId: 'routine-preserve-specific',
+        type: RoutineReminderType.start,
+        date: tomorrow,
+      );
+      expect(notifications.active, contains(specificStartId));
+
+      final cancelledBefore = notifications.cancelled.length;
+      await scheduler.scheduleRoutineReminders(
+        RoutineReminderSchedule(
+          routineId: 'routine-preserve-specific',
+          title: 'Base routine',
+          routineType: 'fixedTime',
+          targetSummary: '20 pages',
+          startTimeMinutes: 1320,
+          endTimeMinutes: 1380,
+          repeatDays: {tomorrow.weekday, dayAfterTomorrow.weekday},
+          fullDurationMinutes: 60,
+          miniDurationMinutes: 10,
+          isActive: true,
+          reminderEnabled: true,
+        ),
+      );
+
+      final refreshCancelledIds = notifications.cancelled.skip(cancelledBefore);
+      expect(refreshCancelledIds, isNot(contains(specificStartId)));
+      expect(notifications.active, contains(specificStartId));
+      expect(
+        notifications.scheduled.where((id) => id == specificStartId),
+        hasLength(1),
+      );
+      expect(
+        notifications.scheduledDates.values.any(
+          (date) => _dateKey(date) == _dateKey(dayAfterTomorrow),
+        ),
+        isTrue,
+      );
+    },
+  );
+
   test('past specificDate schedule does not schedule reminders', () async {
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
     await _insertRoutine(database, routineId: 'routine-past-specific');

@@ -90,8 +90,14 @@ class LocalRoutineNotificationScheduler
 
   @override
   Future<void> scheduleRoutineReminders(RoutineReminderSchedule routine) async {
+    final preservedSpecificDates = routine.specificDate == null
+        ? await _specificDateKeysForRoutine(routine.routineId)
+        : const <String>{};
     if (routine.specificDate == null) {
-      await cancelRoutineReminders(routine.routineId);
+      await _cancelBaseScheduleReminders(
+        routine.routineId,
+        preservedDateKeys: preservedSpecificDates,
+      );
     } else {
       await _cancelSpecificDateReminders(
         routine.routineId,
@@ -131,7 +137,10 @@ class LocalRoutineNotificationScheduler
       );
     });
 
-    for (final scheduledDay in _scheduledDatesFor(routine)) {
+    for (final scheduledDay in _scheduledDatesFor(
+      routine,
+      excludedDateKeys: preservedSpecificDates,
+    )) {
       for (final rule in reminderRules) {
         final scheduledDate = _dateTimeFor(
           date: scheduledDay,
@@ -189,6 +198,37 @@ class LocalRoutineNotificationScheduler
     for (final dateKey in specificDates.whereType<String>()) {
       final date = DateTime.tryParse(dateKey);
       if (date == null) continue;
+      for (final rule in _fallbackReminderRules) {
+        await _notifications.cancel(
+          notificationIdForDate(
+            routineId: routineId,
+            type: rule.type,
+            date: date,
+          ),
+        );
+      }
+    }
+    await _deleteReminderRows(routineId);
+  }
+
+  Future<void> _cancelBaseScheduleReminders(
+    String routineId, {
+    required Set<String> preservedDateKeys,
+  }) async {
+    for (final weekday in DateTimeUtils.weekdayShortLabels.keys) {
+      for (final rule in _fallbackReminderRules) {
+        // Cancels legacy repeating weekly IDs from older app versions.
+        await _notifications.cancel(
+          notificationIdFor(
+            routineId: routineId,
+            type: rule.type,
+            weekday: weekday,
+          ),
+        );
+      }
+    }
+    for (final date in _rollingCancellationDates()) {
+      if (preservedDateKeys.contains(DateTimeUtils.dateKey(date))) continue;
       for (final rule in _fallbackReminderRules) {
         await _notifications.cancel(
           notificationIdForDate(
@@ -296,6 +336,15 @@ class LocalRoutineNotificationScheduler
         ),
       );
     }
+  }
+
+  Future<Set<String>> _specificDateKeysForRoutine(String routineId) {
+    return (_database.select(_database.routineSchedules)
+          ..where((table) => table.routineId.equals(routineId))
+          ..where((table) => table.specificDate.isNotNull()))
+        .map((schedule) => schedule.specificDate)
+        .get()
+        .then((dates) => dates.whereType<String>().toSet());
   }
 
   int _baseMinutesFor(
@@ -436,7 +485,10 @@ int _stablePositiveHash(String value) {
   return hash;
 }
 
-List<DateTime> _scheduledDatesFor(RoutineReminderSchedule routine) {
+List<DateTime> _scheduledDatesFor(
+  RoutineReminderSchedule routine, {
+  Set<String> excludedDateKeys = const {},
+}) {
   final specificDate = routine.specificDate;
   if (specificDate != null) {
     final date = DateTime.tryParse(specificDate);
@@ -447,7 +499,9 @@ List<DateTime> _scheduledDatesFor(RoutineReminderSchedule routine) {
     if (day.isBefore(todayOnly)) return const [];
     return [day];
   }
-  return _nextScheduledDays(routine.repeatDays);
+  return _nextScheduledDays(routine.repeatDays)
+      .where((date) => !excludedDateKeys.contains(DateTimeUtils.dateKey(date)))
+      .toList();
 }
 
 bool _isPastDateKey(String dateKey) {
