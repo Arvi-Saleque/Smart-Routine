@@ -267,6 +267,7 @@ class LocalRoutineNotificationScheduler
     DateTime? now,
   }) async {
     for (final type in const [
+      RoutineReminderType.preparation,
       RoutineReminderType.start,
       RoutineReminderType.late,
       RoutineReminderType.recovery,

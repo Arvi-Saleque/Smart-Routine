@@ -317,3 +317,19 @@ Manual APK testing and follow-up polish.
 - Fixed weekly base reminder refreshes so they preserve existing one-time `specificDate` reminders for the same routine.
 - Added a regression test proving a base weekly refresh does not cancel or overwrite the moved-to-tomorrow reminder.
 - Re-verified specific-date reminder behavior: tomorrow schedules can schedule reminders, past specific dates do not schedule reminders, and weekly/flexible scheduling behavior remains covered.
+
+## Latest Update: Final Behavior Correctness Fix
+
+- Added `RoutineStatus.moved` and styled it like a non-action rescheduled state.
+- Changed `moveToTomorrow` so the current-day log is saved as `moved` with the existing `Moved to yyyy-MM-dd` note.
+- Today UI now treats `moved` as finished, so moved routines do not show missed recovery actions again.
+- Updated later-today rescheduling to create/update a one-time `specificDate` schedule for the selected date using `reschedule-{routineId}-{dateKey}`.
+- Later-today rescheduling now asks the notification scheduler to schedule local reminders for the new one-time time range.
+- Current-day reminder cancellation now cancels preparation, start, late, and recovery reminders.
+- Added/updated tests for moved status behavior, later-today specific-date schedules and reminder scheduling, and all-reminder cancellation after finish actions.
+- Ran `flutter clean`: passed.
+- Ran `flutter pub get`: passed.
+- Ran `dart run build_runner build --delete-conflicting-outputs`: passed; installed build_runner ignores that deprecated flag.
+- Ran `flutter analyze`: passed with no issues.
+- Ran `flutter test`: passed with all 45 tests green.
+- Ran `flutter build apk --debug`: passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.

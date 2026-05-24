@@ -402,6 +402,11 @@ void main() {
       containsAll([
         notificationIdForDate(
           routineId: 'routine-future-safe',
+          type: RoutineReminderType.preparation,
+          date: today,
+        ),
+        notificationIdForDate(
+          routineId: 'routine-future-safe',
           type: RoutineReminderType.start,
           date: today,
         ),

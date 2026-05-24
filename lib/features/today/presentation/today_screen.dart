@@ -149,7 +149,8 @@ class _TimelineRoutineCard extends ConsumerWidget {
     final isFinished =
         status == RoutineStatus.completed ||
         status == RoutineStatus.skipped ||
-        status == RoutineStatus.recovered;
+        status == RoutineStatus.recovered ||
+        status == RoutineStatus.moved;
     final isMissed = status == RoutineStatus.missed;
 
     return RoutineCard(

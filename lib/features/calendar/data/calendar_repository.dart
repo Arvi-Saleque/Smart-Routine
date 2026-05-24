@@ -180,6 +180,7 @@ class _CalendarDayMarkerBuilder {
         missedCount++;
         break;
       case RoutineStatus.rescheduled:
+      case RoutineStatus.moved:
         rescheduledCount++;
         break;
       case RoutineStatus.upcoming:

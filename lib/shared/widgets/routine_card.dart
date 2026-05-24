@@ -124,7 +124,8 @@ class RoutineCard extends StatelessWidget {
       RoutineStatus.recovered => const Color(0xFF16A34A),
       RoutineStatus.skipped => colorScheme.outline,
       RoutineStatus.missed => const Color(0xFFDC2626),
-      RoutineStatus.rescheduled => const Color(0xFFD97706),
+      RoutineStatus.rescheduled ||
+      RoutineStatus.moved => const Color(0xFFD97706),
       RoutineStatus.upcoming => colorScheme.secondary,
     };
   }

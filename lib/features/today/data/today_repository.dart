@@ -159,6 +159,39 @@ class TodayRepository {
           'Rescheduled for ${DateTimeUtils.formatTimeRange(nextStart, nextStart + plannedDuration)}.',
       updatedAt: now,
     );
+
+    await _database
+        .into(_database.routineSchedules)
+        .insertOnConflictUpdate(
+          RoutineSchedulesCompanion.insert(
+            id: _specificDateScheduleId(entry.detail.routine.id, entry.dateKey),
+            routineId: entry.detail.routine.id,
+            startTimeMinutes: nextStart,
+            endTimeMinutes: nextStart + plannedDuration,
+            repeatDays: '',
+            specificDate: Value(entry.dateKey),
+            timezone: schedule.timezone,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    await _notificationScheduler?.scheduleRoutineReminders(
+      RoutineReminderSchedule(
+        routineId: entry.detail.routine.id,
+        title: entry.detail.routine.title,
+        routineType: entry.detail.routine.routineType,
+        targetSummary: entry.detail.goalLabel,
+        startTimeMinutes: nextStart,
+        endTimeMinutes: nextStart + plannedDuration,
+        repeatDays: const {},
+        specificDate: entry.dateKey,
+        fullDurationMinutes: entry.detail.routine.fullDurationMinutes,
+        miniDurationMinutes: entry.detail.routine.miniDurationMinutes,
+        isActive: entry.detail.routine.isActive,
+        reminderEnabled: entry.detail.routine.reminderEnabled,
+      ),
+    );
   }
 
   Future<void> moveToTomorrow(TodayTimelineEntry entry) async {
@@ -174,7 +207,7 @@ class TodayRepository {
           .into(_database.routineSchedules)
           .insertOnConflictUpdate(
             RoutineSchedulesCompanion.insert(
-              id: _tomorrowScheduleId(entry.detail.routine.id, tomorrow),
+              id: _specificDateScheduleId(entry.detail.routine.id, tomorrow),
               routineId: entry.detail.routine.id,
               startTimeMinutes: schedule.startTimeMinutes,
               endTimeMinutes: schedule.endTimeMinutes,
@@ -188,7 +221,7 @@ class TodayRepository {
 
       await _upsertLog(
         entry: entry,
-        status: RoutineStatus.rescheduled,
+        status: RoutineStatus.moved,
         note: 'Moved to $tomorrow',
         updatedAt: now,
       );
@@ -329,7 +362,7 @@ class TodayRepository {
     return RoutineStatus.upcoming;
   }
 
-  String _tomorrowScheduleId(String routineId, String dateKey) {
+  String _specificDateScheduleId(String routineId, String dateKey) {
     return 'reschedule-$routineId-$dateKey';
   }
 }
@@ -424,6 +457,8 @@ class TodayTimelineEntry {
     if (log != null &&
         (status == RoutineStatus.rescheduled ||
             log.status == RoutineStatus.rescheduled.name ||
+            status == RoutineStatus.moved ||
+            log.status == RoutineStatus.moved.name ||
             status == RoutineStatus.recovered)) {
       return DateTimeUtils.formatTimeRange(
         log.plannedStartTimeMinutes,

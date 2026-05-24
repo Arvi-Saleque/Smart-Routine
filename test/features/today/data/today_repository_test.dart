@@ -142,6 +142,33 @@ void main() {
     expect(rescheduled.log!.plannedStartTimeMinutes, greaterThan(90));
     expect(rescheduled.recoveryNote, contains('Rescheduled for'));
 
+    final dateKey = DateTimeUtils.dateKey(date);
+    final todaySchedules = await database
+        .select(database.routineSchedules)
+        .get();
+    final todaySpecificSchedule = todaySchedules.singleWhere(
+      (schedule) => schedule.specificDate == dateKey,
+    );
+    expect(
+      todaySpecificSchedule.id,
+      'reschedule-${rescheduled.detail.routine.id}-$dateKey',
+    );
+    expect(todaySpecificSchedule.repeatDays, isEmpty);
+    expect(
+      todaySpecificSchedule.startTimeMinutes,
+      rescheduled.log!.plannedStartTimeMinutes,
+    );
+    expect(
+      todaySpecificSchedule.endTimeMinutes,
+      rescheduled.log!.plannedEndTimeMinutes,
+    );
+    expect(scheduler.scheduled, hasLength(1));
+    expect(scheduler.scheduled.single.specificDate, dateKey);
+    expect(
+      scheduler.scheduled.single.startTimeMinutes,
+      rescheduled.log!.plannedStartTimeMinutes,
+    );
+
     final activeAtRescheduledTime = await todayRepository.getTimelineForDate(
       date,
       now: DateTime(
@@ -171,7 +198,10 @@ void main() {
       now: DateTime(date.year, date.month, date.day, 10),
     );
 
-    expect(timeline.entries.single.log!.status, RoutineStatus.rescheduled.name);
+    expect(timeline.entries.single.log!.status, RoutineStatus.moved.name);
+    expect(timeline.entries.single.status, RoutineStatus.moved);
+    expect(timeline.activeEntry, isNull);
+    expect(timeline.missedCount, 0);
     expect(timeline.entries.single.recoveryNote, contains('Moved to'));
   });
 
@@ -209,6 +239,18 @@ void main() {
       expect(timeline.entries.single.status, RoutineStatus.missed);
 
       await todayRepository.moveToTomorrow(timeline.entries.single);
+
+      final todayTimeline = await todayRepository.getTimelineForDate(
+        date,
+        now: DateTime(2026, 5, 18, 12),
+      );
+      expect(todayTimeline.entries.single.status, RoutineStatus.moved);
+      expect(
+        todayTimeline.entries.single.log!.status,
+        RoutineStatus.moved.name,
+      );
+      expect(todayTimeline.missedCount, 0);
+      expect(todayTimeline.activeEntry, isNull);
 
       final schedules = await database.select(database.routineSchedules).get();
       expect(
@@ -335,6 +377,10 @@ void main() {
     expect(scheduler.cancelledRemaining, hasLength(1));
     expect(scheduler.cancelledRemaining.single.routineId, routineId);
     expect(
+      scheduler.cancelledRemaining.single.types,
+      containsAll(RoutineReminderType.values),
+    );
+    expect(
       scheduler.cancelledRemaining.single.dateKey,
       timeline.entries.single.dateKey,
     );
@@ -360,6 +406,10 @@ void main() {
 
     expect(scheduler.cancelledRemaining, hasLength(1));
     expect(scheduler.cancelledRemaining.single.routineId, routineId);
+    expect(
+      scheduler.cancelledRemaining.single.types,
+      containsAll(RoutineReminderType.values),
+    );
     expect(
       scheduler.cancelledRemaining.single.dateKey,
       timeline.entries.single.dateKey,
@@ -411,6 +461,7 @@ class _FakeRoutineNotificationScheduler
       _CancellationCall(
         routineId,
         now == null ? null : DateTimeUtils.dateKey(now),
+        RoutineReminderType.values.toSet(),
       ),
     );
   }
@@ -435,8 +486,9 @@ class _FakeRoutineNotificationScheduler
 }
 
 class _CancellationCall {
-  const _CancellationCall(this.routineId, this.dateKey);
+  const _CancellationCall(this.routineId, this.dateKey, this.types);
 
   final String routineId;
   final String? dateKey;
+  final Set<RoutineReminderType> types;
 }

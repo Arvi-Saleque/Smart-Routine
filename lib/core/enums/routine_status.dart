@@ -6,6 +6,7 @@ enum RoutineStatus {
   skipped,
   missed,
   rescheduled,
+  moved,
   recovered;
 
   String get label => switch (this) {
@@ -16,6 +17,7 @@ enum RoutineStatus {
     RoutineStatus.skipped => 'Skipped',
     RoutineStatus.missed => 'Missed',
     RoutineStatus.rescheduled => 'Rescheduled',
+    RoutineStatus.moved => 'Moved',
     RoutineStatus.recovered => 'Recovered',
   };
 }

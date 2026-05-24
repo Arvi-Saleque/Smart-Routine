@@ -173,6 +173,10 @@ void main() {
     expect(scheduler.cancelledRemaining, hasLength(1));
     expect(scheduler.cancelledRemaining.single.routineId, routineId);
     expect(
+      scheduler.cancelledRemaining.single.types,
+      containsAll(RoutineReminderType.values),
+    );
+    expect(
       scheduler.cancelledRemaining.single.dateKey,
       DateTimeUtils.dateKey(startedAt),
     );
@@ -207,6 +211,10 @@ void main() {
     expect(scheduler.cancelledRemaining, hasLength(1));
     expect(scheduler.cancelledRemaining.single.routineId, routineId);
     expect(
+      scheduler.cancelledRemaining.single.types,
+      containsAll(RoutineReminderType.values),
+    );
+    expect(
       scheduler.cancelledRemaining.single.dateKey,
       DateTimeUtils.dateKey(startedAt),
     );
@@ -229,6 +237,7 @@ class _FakeRoutineNotificationScheduler
       _CancellationCall(
         routineId,
         now == null ? null : DateTimeUtils.dateKey(now),
+        RoutineReminderType.values.toSet(),
       ),
     );
   }
@@ -253,8 +262,9 @@ class _FakeRoutineNotificationScheduler
 }
 
 class _CancellationCall {
-  const _CancellationCall(this.routineId, this.dateKey);
+  const _CancellationCall(this.routineId, this.dateKey, this.types);
 
   final String routineId;
   final String? dateKey;
+  final Set<RoutineReminderType> types;
 }
