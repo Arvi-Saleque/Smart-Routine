@@ -342,3 +342,11 @@ Manual APK testing and follow-up polish.
 - Added a settings repository regression test for the Saturday default.
 - Ran `flutter analyze`: passed with no issues.
 - Ran targeted settings and calendar tests: passed.
+
+## Latest Update: Settings Back Navigation
+
+- Added optional app-bar leading support to `AppScaffold`.
+- Changed the global Settings icon to push `/settings` so route history is preserved.
+- Added a Settings screen back arrow that pops when possible and falls back to Today.
+- Ran `flutter analyze`: passed with no issues.
+- Ran targeted widget/settings tests: passed.

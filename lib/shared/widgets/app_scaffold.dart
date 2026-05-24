@@ -6,6 +6,7 @@ class AppScaffold extends StatelessWidget {
     super.key,
     required this.title,
     required this.body,
+    this.leading,
     this.actions,
     this.floatingActionButton,
     this.showBottomNavigation = true,
@@ -13,6 +14,7 @@ class AppScaffold extends StatelessWidget {
 
   final String title;
   final Widget body;
+  final Widget? leading;
   final List<Widget>? actions;
   final Widget? floatingActionButton;
   final bool showBottomNavigation;
@@ -24,6 +26,7 @@ class AppScaffold extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: leading,
         title: Text(title),
         actions:
             actions ?? [_SettingsAction(isCurrent: location == '/settings')],
@@ -70,7 +73,7 @@ class _SettingsAction extends StatelessWidget {
 
     return IconButton(
       tooltip: 'Settings',
-      onPressed: () => context.go('/settings'),
+      onPressed: () => context.push('/settings'),
       icon: const Icon(Icons.settings_outlined),
     );
   }
